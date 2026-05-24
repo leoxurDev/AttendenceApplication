@@ -6,8 +6,8 @@ class StudentForm(forms.ModelForm):
         model = Student
         fields = ['first_name', 'last_name', 'classroom', 'avatar_emoji', 'avatar_color']
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Leo'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Lion'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Leonardo'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Da Vinci'}),
             'classroom': forms.Select(attrs={'class': 'form-select'}),
             'avatar_emoji': forms.Select(attrs={'class': 'form-select'}),
             'avatar_color': forms.Select(attrs={'class': 'form-select'}),

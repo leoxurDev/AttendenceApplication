@@ -3,9 +3,20 @@ from django.utils import timezone
 
 class Student(models.Model):
     CLASSROOM_CHOICES = [
-        ('Bumblebees', 'Bumblebees 🐝'),
-        ('Butterflies', 'Butterflies 🦋'),
-        ('Ladybugs', 'Ladybugs 🐞'),
+    ('🐝 Bumblebees', 'Pre-KG'),
+    ('🦋 Butterflies', 'LKG'),
+    ('🐞 Ladybugs', 'UKG'),
+    ('🪰 Dragonflies', '1st Grade'),
+    ('🐝 Honeybees', '2nd Grade'),
+    ('✨ Fireflies', '3rd Grade'),
+    ('🦗 Grasshoppers', '4th Grade'),
+    ('🐛 Caterpillars', '5th Grade'),
+    # ('🪲 Beetles', '6th Grade'),
+    # ('🎻 Crickets', '7th Grade'),
+    # ('🙏 Mantis', '8th Grade'),
+    # ('🧵 Silkworms', '9th Grade'),
+    # ('🌙 Phoenix Moths', '10th Grade'),
+
     ]
 
     AVATAR_EMOJIS = [
@@ -30,6 +41,7 @@ class Student(models.Model):
     AVATAR_COLORS = [
         ('#FFADAD', 'Pastel Red'),
         ('#FFD6A5', 'Pastel Orange'),
+        ('#2F2F2F', 'Pastel Black'),
         ('#FDFFB6', 'Pastel Yellow'),
         ('#CAFFBF', 'Pastel Green'),
         ('#9BF6FF', 'Pastel Cyan'),
