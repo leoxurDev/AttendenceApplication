@@ -5,6 +5,9 @@ import csv
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from .models import Student, Attendance, ClassroomOption
 from .forms import StudentForm
 
@@ -116,6 +119,68 @@ def toggle_attendance(request):
         'student_id': student_id
     })
 
+@require_POST
+def verify_pin(request):
+    student_id = request.POST.get('student_id')
+    pin_code = request.POST.get('pin_code')
+    try:
+        student = Student.objects.get(id=student_id, is_active=True)
+        if student.pin_code == pin_code:
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid PIN. Please try again! 🤫'})
+    except Student.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Student not found.'}, status=404)
+
+def teacher_login(request):
+    if request.user.is_authenticated:
+        return redirect('teacher_dashboard')
+        
+    students = Student.objects.filter(is_active=True).order_by('classroom', 'first_name')
+    classrooms = ClassroomOption.objects.filter(is_active=True).order_by('order')
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            auth_login(request, user)
+            messages.success(request, f"Welcome back, Teacher {user.username}! 🍎")
+            return redirect('teacher_dashboard')
+        else:
+            messages.error(request, "Invalid username or password. Please try again.")
+    else:
+        form = AuthenticationForm()
+        
+    context = {
+        'form': form,
+        'action': 'login',
+        'students': students,
+        'classrooms': classrooms,
+    }
+    return render(request, 'attendance/login.html', context)
+
+def teacher_register(request):
+    if request.user.is_authenticated:
+        return redirect('teacher_dashboard')
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth_login(request, user)
+            messages.success(request, f"Registration successful! Welcome, Teacher {user.username}! 🏫")
+            return redirect('teacher_dashboard')
+        else:
+            messages.error(request, "Registration failed. Please correct the errors below.")
+    else:
+        form = UserCreationForm()
+    return render(request, 'attendance/login.html', {'form': form, 'action': 'register'})
+
+def teacher_logout(request):
+    auth_logout(request)
+    messages.info(request, "You have been logged out. See you soon! 👋")
+    return redirect('student_grid')
+
+@login_required(login_url='teacher_login')
 def teacher_dashboard(request):
     today = timezone.localdate()
     classroom_filter = request.GET.get('classroom', 'All')
@@ -169,6 +234,7 @@ def teacher_dashboard(request):
     }
     return render(request, 'attendance/teacher_dashboard.html', context)
 
+@login_required(login_url='teacher_login')
 def add_student(request):
     if request.method == 'POST':
         form = StudentForm(request.POST)
@@ -181,6 +247,7 @@ def add_student(request):
         
     return render(request, 'attendance/student_form.html', {'form': form, 'title': 'Add New Student 🐣'})
 
+@login_required(login_url='teacher_login')
 def edit_student(request, pk):
     student = get_object_or_404(Student, id=pk)
     if request.method == 'POST':
@@ -194,6 +261,7 @@ def edit_student(request, pk):
         
     return render(request, 'attendance/student_form.html', {'form': form, 'title': f'Edit Details for {student.first_name} ✏️'})
 
+@login_required(login_url='teacher_login')
 def delete_student(request, pk):
     student = get_object_or_404(Student, id=pk)
     if request.method == 'POST':
@@ -204,6 +272,7 @@ def delete_student(request, pk):
     return render(request, 'attendance/student_confirm_delete.html', {'student': student})
 
 
+@login_required(login_url='teacher_login')
 def export_student_csv(request):
     classroom_filter = request.GET.get('classroom', 'All')
     

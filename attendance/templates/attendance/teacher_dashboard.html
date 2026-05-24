@@ -23,6 +23,9 @@
             <a href="{% url 'export_student_csv' %}?classroom={{ selected_classroom }}" class="bubbly-btn export-btn">
                 📥 Export CSV
             </a>
+            <a href="{% url 'teacher_logout' %}" class="bubbly-btn cancel-btn logout-btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-color: #ef4444; box-shadow: 0 6px 0 #b91c1c;">
+                🚪 Log Out
+            </a>
         </div>
     </div>
 
@@ -76,6 +79,7 @@
                     <th>Avatar</th>
                     <th>Full Name</th>
                     <th>Classroom</th>
+                    <th>PIN</th>
                     <th>Today's Attendance Status</th>
                     <th>Checked In At</th>
                     <th>Morning Mood</th>
@@ -95,6 +99,11 @@
                         </td>
                         <td>
                             <span class="table-classroom-badge">{{ student.classroom }}</span>
+                        </td>
+                        <td>
+                            <span style="font-family: monospace; font-size: 1.1rem; background-color: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; color: #475569;">
+                                {{ student.pin_code }}
+                            </span>
                         </td>
                         <td>
                             <!-- Teacher Quick Attendance Actions -->

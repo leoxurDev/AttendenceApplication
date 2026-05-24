@@ -10,6 +10,15 @@ from attendance.models import Student, Attendance
 def seed_database():
     print("🌱 Starting database seeding...")
     
+    # Seed teacher user
+    from django.contrib.auth.models import User
+    User.objects.filter(username='teacher').delete()
+    teacher = User.objects.create_user(username='teacher', email='teacher@school.com', password='teacher123')
+    teacher.is_staff = True
+    teacher.is_superuser = True
+    teacher.save()
+    print("👤 Created default teacher account: teacher / teacher123")
+    
     # Clean existing data
     print("🧹 Cleaning out existing student roster and attendance lists...")
     Attendance.objects.all().delete()
@@ -111,14 +120,16 @@ def seed_database():
     # Save to Database
     count = 0
     for child in mock_students:
+        pin = f"{1000 + count + 1}"
         student = Student.objects.create(
             first_name=child["first_name"],
             last_name=child["last_name"],
             classroom=child["classroom"],
             avatar_emoji=child["avatar_emoji"],
-            avatar_color=child["avatar_color"]
+            avatar_color=child["avatar_color"],
+            pin_code=pin
         )
-        print(f"🎒 Created student: {student.full_name} in {student.classroom} ({student.avatar_emoji})")
+        print(f"🎒 Created student: {student.full_name} in {student.classroom} ({student.avatar_emoji}) - PIN: {student.pin_code}")
         count += 1
         
     print(f"✨ Seeding complete! Added {count} kids into the database successfully.")

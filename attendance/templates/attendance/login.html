@@ -1,0 +1,265 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}
+    {% if action == 'login' %}Unified School Portal{% else %}Teacher Register{% endif %} | Kindergarten Admin
+{% endblock %}
+
+{% block content %}
+<div class="form-page-container" style="display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 2rem 0;">
+    <div class="kid-modal-card form-card" style="position: relative; max-width: 480px; width: 100%; box-sizing: border-box;">
+        <div class="modal-bubble-decor"></div>
+        
+        <div class="modal-header-section">
+            <h2>School Portal 🏫</h2>
+            <p>Welcome to FocusFlow Academy!</p>
+        </div>
+        
+        <!-- Display Django message alerts inside the form page too -->
+        {% if messages %}
+            <div class="messages-container" style="margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                    <div class="message-alert {% if message.tags %}{{ message.tags }}{% endif %}" style="padding: 0.75rem 1.25rem; font-size: 0.9rem; font-weight: 700; border-radius: 14px; text-align: center;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if action == 'login' %}
+            <!-- TAB CONTROL FOR UNIFIED LOGIN -->
+            <div class="login-tabs-container" style="display: flex; justify-content: center; margin-bottom: 2rem; border-radius: 20px; background-color: #f1f5f9; padding: 0.35rem; position: relative; border: 2px solid #e2e8f0;">
+                <button class="login-tab-btn active" id="tab-student" data-target="student-login-section" style="flex: 1; border: none; background: transparent; padding: 0.8rem 1rem; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 1rem; color: #1e3a8a; border-radius: 16px; cursor: pointer; transition: all 0.3s; z-index: 2; outline: none;">
+                    🎒 Student Check-in
+                </button>
+                <button class="login-tab-btn" id="tab-teacher" data-target="teacher-login-section" style="flex: 1; border: none; background: transparent; padding: 0.8rem 1rem; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 1rem; color: #475569; border-radius: 16px; cursor: pointer; transition: all 0.3s; z-index: 2; outline: none;">
+                    🔑 Teacher Portal
+                </button>
+                <div class="login-tab-slider" style="position: absolute; top: 0.35rem; left: 0.35rem; width: calc(50% - 0.35rem); height: calc(100% - 0.7rem); background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1;"></div>
+            </div>
+
+            <!-- STUDENT CHECK-IN SECTION -->
+            <div id="student-login-section" class="login-section-content active" style="transition: all 0.3s ease;">
+                <!-- Student selector dropdown -->
+                <div class="form-group-bubbly" id="student-select-group" style="margin-bottom: 1.5rem;">
+                    <label for="student-select" style="display: block; font-family: 'Fredoka', sans-serif; font-weight: 700; color: #1e3a8a; margin-bottom: 0.5rem; font-size: 1.05rem;">
+                        Select Your Name:
+                    </label>
+                    <select id="student-select" class="form-select" style="width: 100%; padding: 0.8rem 1.2rem; border: 3px solid #cbd5e1; border-radius: 18px; font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 1rem; outline: none; background-color: #f8fafc; cursor: pointer; transition: border-color 0.2s;">
+                        <option value="" disabled selected>Tap here to find your name... 🎒</option>
+                        {% for classroom in classrooms %}
+                            <optgroup label="{{ classroom.display_value }}">
+                                {% for student in students %}
+                                    {% if student.classroom == classroom.name %}
+                                        <option value="{{ student.id }}" data-name="{{ student.first_name }}" data-emoji="{{ student.avatar_emoji }}" data-color="{{ student.avatar_color }}">
+                                            {{ student.avatar_emoji }} {{ student.full_name }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Screen 1: Keypad (Initially hidden) -->
+                <div id="student-keypad-container" style="display: none; animation: slideDown 0.3s ease-out;">
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <p style="font-weight: 700; color: #475569; margin: 0;">Enter your 4-digit PIN! 🔑</p>
+                    </div>
+                    
+                    <!-- PIN Dots -->
+                    <div class="pin-dots-container">
+                        <div class="pin-dot"></div>
+                        <div class="pin-dot"></div>
+                        <div class="pin-dot"></div>
+                        <div class="pin-dot"></div>
+                    </div>
+                    
+                    <div class="pin-error-message" id="student-pin-error-msg" style="text-align: center; margin-bottom: 0.5rem;">Wrong PIN! 🤫</div>
+                    
+                    <!-- Keypad Grid -->
+                    <div class="pin-keypad-grid">
+                        <button class="keypad-btn student-key" data-val="1">1</button>
+                        <button class="keypad-btn student-key" data-val="2">2</button>
+                        <button class="keypad-btn student-key" data-val="3">3</button>
+                        <button class="keypad-btn student-key" data-val="4">4</button>
+                        <button class="keypad-btn student-key" data-val="5">5</button>
+                        <button class="keypad-btn student-key" data-val="6">6</button>
+                        <button class="keypad-btn student-key" data-val="7">7</button>
+                        <button class="keypad-btn student-key" data-val="8">8</button>
+                        <button class="keypad-btn student-key" data-val="9">9</button>
+                        <button class="keypad-btn student-key action-key" id="student-keypad-clear" data-action="clear">Clear</button>
+                        <button class="keypad-btn student-key" data-val="0">0</button>
+                        <button class="keypad-btn student-key action-key" id="student-keypad-backspace" data-action="backspace">⌫</button>
+                    </div>
+                </div>
+
+                <!-- Screen 2: Mood Selection (Initially hidden) -->
+                <div id="student-mood-container" style="display: none; animation: fadeIn 0.3s ease-out;">
+                    <div class="modal-header-section" style="text-align: center; margin-bottom: 1.5rem;">
+                        <h3 id="student-mood-welcome" style="font-family: 'Fredoka', sans-serif; font-size: 1.4rem; color: #1e3a8a; margin-bottom: 0.5rem; margin-top: 0;">How are you feeling, Leo?</h3>
+                        <p style="font-weight: 600; color: #475569; margin: 0;">Choose a face! 👇</p>
+                    </div>
+                    
+                    <!-- Mood Selector Choices -->
+                    <div class="mood-selection-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; justify-items: center;">
+                        <button class="mood-option-btn selected" data-mood="happy">
+                            <span class="mood-emoji">😊</span>
+                            <span class="mood-label">Happy</span>
+                        </button>
+                        <button class="mood-option-btn" data-mood="excited">
+                            <span class="mood-emoji">🤩</span>
+                            <span class="mood-label">Excited</span>
+                        </button>
+                        <button class="mood-option-btn" data-mood="sleepy">
+                            <span class="mood-emoji">🥱</span>
+                            <span class="mood-label">Sleepy</span>
+                        </button>
+                        <button class="mood-option-btn" data-mood="silly">
+                            <span class="mood-emoji">🤪</span>
+                            <span class="mood-label">Silly</span>
+                        </button>
+                        <button class="mood-option-btn" data-mood="sad">
+                            <span class="mood-emoji">😢</span>
+                            <span class="mood-label">Sad</span>
+                        </button>
+                    </div>
+                    
+                    <button class="bubbly-btn primary-btn" id="student-submit-checkin" style="width: 100%;">
+                        ✨ I'm Here! ✨
+                    </button>
+                </div>
+
+                <!-- Screen 3: Success Screen (Initially hidden) -->
+                <div id="student-success-container" style="display: none; text-align: center; padding: 1.5rem; animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    <div class="success-avatar-circle" id="student-success-avatar-circle" style="width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 3.5rem; border: 4px solid #ffffff; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">
+                        🦁
+                    </div>
+                    <h2 style="font-family: 'Fredoka', sans-serif; color: #10b981; font-size: 1.8rem; margin-bottom: 0.75rem; margin-top: 0;">Checked In! 🎉</h2>
+                    <p id="student-success-msg" style="font-weight: 700; color: #1e3a8a; font-size: 1.1rem; line-height: 1.5; margin-bottom: 2rem;">Leo is checked in for today. Have an amazing day of learning!</p>
+                    
+                    <button class="bubbly-btn secondary-btn" id="student-reset-btn" style="width: 100%;">
+                        🎒 Check in Another Explorer
+                    </button>
+                </div>
+            </div>
+
+            <!-- TEACHER LOGIN SECTION -->
+            <div id="teacher-login-section" class="login-section-content" style="display: none; transition: all 0.3s ease;">
+                <form method="POST" class="bubbly-form">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="form-group-bubbly" style="margin-bottom: 1.25rem;">
+                            <label for="{{ field.id_for_label }}" style="display: block; font-family: 'Fredoka', sans-serif; font-weight: 700; color: #1e3a8a; margin-bottom: 0.5rem; font-size: 1.05rem;">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="field-error-bubble" style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 0.5rem 1rem; color: #b91c1c; font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem; position: relative;">
+                                    {{ field.errors.as_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="form-actions-wrapper" style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+                        <button type="submit" class="bubbly-btn primary-btn" style="width: 100%;">
+                            Sign In 🍎
+                        </button>
+                        
+                        <a href="{% url 'student_grid' %}" class="bubbly-btn secondary-btn" style="width: 100%;">
+                            🏠 Kids Check-in Grid
+                        </a>
+                    </div>
+                </form>
+                
+                <div style="margin-top: 1.5rem; text-align: center; font-weight: 600; color: var(--text-muted);">
+                    Need an account? <a href="{% url 'teacher_register' %}" style="color: #3b82f6; text-decoration: underline; font-weight: 700;">Sign up here</a>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- REGISTRATION FORM ONLY -->
+            <form method="POST" class="bubbly-form">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                    <div class="form-group-bubbly" style="margin-bottom: 1.25rem;">
+                        <label for="{{ field.id_for_label }}" style="display: block; font-family: 'Fredoka', sans-serif; font-weight: 700; color: #1e3a8a; margin-bottom: 0.5rem; font-size: 1.05rem;">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="field-error-bubble" style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 0.5rem 1rem; color: #b91c1c; font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem; position: relative;">
+                                {{ field.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                <div class="form-actions-wrapper" style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+                    <button type="submit" class="bubbly-btn primary-btn" style="width: 100%;">
+                        Create Account 🎒
+                    </button>
+                    
+                    <a href="{% url 'teacher_login' %}" class="bubbly-btn secondary-btn" style="width: 100%;">
+                        🔑 Already have an account? Log In
+                    </a>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    /* Styling standard Django form widgets in login forms */
+    .bubbly-form input[type="text"], 
+    .bubbly-form input[type="password"] {
+        width: 100%;
+        padding: 0.8rem 1.2rem;
+        border: 3px solid #cbd5e1;
+        border-radius: 18px;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+        background-color: #f8fafc;
+        box-sizing: border-box;
+    }
+    .bubbly-form input[type="text"]:focus, 
+    .bubbly-form input[type="password"]:focus {
+        border-color: #3b82f6;
+    }
+    
+    .bubbly-form ul.errorlist {
+        display: none;
+    }
+    
+    .bubbly-form .helptext {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+
+    /* Select element enhancements */
+    #student-select:focus {
+        border-color: #3b82f6;
+    }
+
+    /* Keypad & Animation Keyframes */
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes scaleUp {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+{% endblock %}

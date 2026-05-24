@@ -15,10 +15,11 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ['first_name', 'last_name', 'classroom', 'avatar_emoji', 'avatar_color']
+        fields = ['first_name', 'last_name', 'classroom', 'avatar_emoji', 'avatar_color', 'pin_code']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Leonardo'}),
             'last_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., Da Vinci'}),
+            'pin_code': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g., 1234', 'maxlength': '4'}),
         }
 
     def __init__(self, *args, **kwargs):

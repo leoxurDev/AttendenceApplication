@@ -1015,3 +1015,179 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 3px 0 #b45309;
 }
 
+
+/* PIN Code Verification UI Styles */
+.pin-dots-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1.5rem 0 1rem;
+}
+
+.pin-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3.5px solid #cbd5e1;
+    background-color: transparent;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-dot.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.pin-error-message {
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    min-height: 24px;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+}
+
+.pin-error-message.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.pin-keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    max-width: 280px;
+    margin: 0 auto 1.5rem;
+}
+
+.keypad-btn {
+    background: #ffffff;
+    border: 3px solid #cbd5e1;
+    border-radius: 50%;
+    width: 65px;
+    height: 65px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #cbd5e1;
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    margin: 0 auto;
+}
+
+.keypad-btn:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f6;
+    box-shadow: 0 6px 0 #3b82f6;
+}
+
+.keypad-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #3b82f6;
+}
+
+.keypad-btn.action-key {
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    width: 75px;
+    height: 65px;
+}
+
+.keypad-btn.action-key#keypad-clear {
+    color: #ef4444;
+    border-color: #fee2e2;
+    background-color: #fef2f2;
+    box-shadow: 0 4px 0 #fca5a5;
+}
+.keypad-btn.action-key#keypad-clear:hover {
+    border-color: #ef4444;
+    box-shadow: 0 6px 0 #ef4444;
+}
+.keypad-btn.action-key#keypad-clear:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #ef4444;
+}
+
+.keypad-btn.action-key#keypad-backspace {
+    color: #4b5563;
+    border-color: #f3f4f6;
+    background-color: #f9fafb;
+    box-shadow: 0 4px 0 #d1d5db;
+}
+.keypad-btn.action-key#keypad-backspace:hover {
+    border-color: #4b5563;
+    box-shadow: 0 6px 0 #4b5563;
+}
+.keypad-btn.action-key#keypad-backspace:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #4b5563;
+}
+
+/* Keypad shake animation on error */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    15%, 45%, 75% { transform: translateX(-8px); }
+    30%, 60%, 90% { transform: translateX(8px); }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Unified Login UI Styles */
+.login-tabs-container {
+    box-sizing: border-box;
+}
+
+.login-tab-btn {
+    position: relative;
+    outline: none;
+    border: none;
+    font-family: 'Fredoka', sans-serif;
+    transition: color 0.3s ease;
+}
+
+.login-tab-btn.active {
+    color: #1e3a8a !important;
+}
+
+.login-tab-btn:not(.active):hover {
+    color: #1e3a8a;
+}
+
+/* Styled select optgroup and styling compatibility */
+.form-select optgroup {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #1e3a8a;
+    background-color: #ffffff;
+    font-size: 1rem;
+    padding: 0.5rem;
+}
+
+.form-select option {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    color: #475569;
+    padding: 0.4rem;
+    font-size: 0.95rem;
+}
+
+.success-avatar-circle {
+    background-color: var(--kid-color, #FDFFB6);
+    border: 4px solid #ffffff;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+

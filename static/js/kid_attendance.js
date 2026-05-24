@@ -9,32 +9,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Teacher Dashboard Controls
     initTeacherDashboard();
+
+    // Unified Login Page Controller
+    initUnifiedLogin();
 });
 
 // --- State Variables ---
 let currentSelectedKidId = null;
 let currentSelectedMood = 'happy';
+let currentPIN = '';
 
 // --- Student Grid Controller ---
 function initStudentGrid() {
     const kidCards = document.querySelectorAll('.kid-card');
     const modal = document.getElementById('checkin-modal');
+    
+    // Screens
+    const pinScreen = document.getElementById('pin-screen-container');
+    const moodScreen = document.getElementById('mood-screen-container');
+    
+    // Modal buttons
     const closeBtn = document.getElementById('modal-close-btn');
+    const pinCloseBtn = document.getElementById('pin-modal-close-btn');
     const submitBtn = document.getElementById('modal-submit-btn');
+    
+    // Names/Welcome text
     const welcomeText = document.getElementById('modal-welcome-text');
+    const pinWelcomeText = document.getElementById('pin-modal-welcome-text');
+    
+    // Elements for PIN
+    const pinDots = document.querySelectorAll('.pin-dot');
+    const pinErrorMsg = document.getElementById('pin-error-msg');
+    const keypadButtons = document.querySelectorAll('.keypad-btn');
+    
+    // Mood Buttons
     const moodButtons = document.querySelectorAll('.mood-option-btn');
 
     if (!modal) return; // Not on student grid screen
 
+    function resetPINState() {
+        currentPIN = '';
+        pinDots.forEach(dot => dot.classList.remove('active'));
+        if (pinErrorMsg) pinErrorMsg.classList.remove('show');
+    }
+
+    function showPINScreen() {
+        if (pinScreen) pinScreen.style.display = 'block';
+        if (moodScreen) moodScreen.style.display = 'none';
+        resetPINState();
+    }
+
     // Opening Check-in dialog
     kidCards.forEach(card => {
         card.addEventListener('click', () => {
-            // If already checked in, let's allow them to click again to edit mood or toggle
-            const isCheckedIn = card.classList.contains('checked-in');
             const kidName = card.getAttribute('data-name');
             currentSelectedKidId = card.getAttribute('data-id');
             
-            welcomeText.textContent = `Hi, ${kidName}! 👋`;
+            if (pinWelcomeText) pinWelcomeText.textContent = `Hi, ${kidName}! 👋`;
+            if (welcomeText) welcomeText.textContent = `Hi, ${kidName}! 👋`;
             
             // Set default mood styling
             moodButtons.forEach(btn => btn.classList.remove('selected'));
@@ -42,10 +74,86 @@ function initStudentGrid() {
             if (defaultMoodBtn) defaultMoodBtn.classList.add('selected');
             currentSelectedMood = 'happy';
 
-            // Show Modal
+            // Show modal and start with PIN screen
+            showPINScreen();
             modal.classList.add('active');
         });
     });
+
+    // Keypad interaction
+    keypadButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const val = btn.getAttribute('data-val');
+            const action = btn.getAttribute('data-action');
+
+            if (val !== null) {
+                if (currentPIN.length < 4) {
+                    currentPIN += val;
+                    updatePINDots();
+                    if (currentPIN.length === 4) {
+                        verifyPINCode();
+                    }
+                }
+            } else if (action === 'clear') {
+                resetPINState();
+            } else if (action === 'backspace') {
+                if (currentPIN.length > 0) {
+                    currentPIN = currentPIN.slice(0, -1);
+                    updatePINDots();
+                }
+            }
+        });
+    });
+
+    function updatePINDots() {
+        pinDots.forEach((dot, index) => {
+            if (index < currentPIN.length) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }
+
+    function verifyPINCode() {
+        const formData = new FormData();
+        formData.append('student_id', currentSelectedKidId);
+        formData.append('pin_code', currentPIN);
+
+        fetch(VERIFY_PIN_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // PIN is correct! Transition to mood screen
+                if (pinScreen) pinScreen.style.display = 'none';
+                if (moodScreen) moodScreen.style.display = 'block';
+            } else {
+                // PIN is wrong
+                if (pinScreen) {
+                    pinScreen.classList.add('shake');
+                    if (pinErrorMsg) {
+                        pinErrorMsg.textContent = data.error || 'Wrong PIN! 🤫';
+                        pinErrorMsg.classList.add('show');
+                    }
+                    setTimeout(() => {
+                        pinScreen.classList.remove('shake');
+                    }, 500);
+                }
+                resetPINState();
+            }
+        })
+        .catch(err => {
+            console.error("PIN verification error:", err);
+            resetPINState();
+        });
+    }
 
     // Mood picker choice click
     moodButtons.forEach(btn => {
@@ -58,15 +166,18 @@ function initStudentGrid() {
     });
 
     // Close Modal triggers
-    closeBtn.addEventListener('click', () => {
+    const closeAllModals = () => {
         modal.classList.remove('active');
         currentSelectedKidId = null;
-    });
+        resetPINState();
+    };
+
+    if (closeBtn) closeBtn.addEventListener('click', closeAllModals);
+    if (pinCloseBtn) pinCloseBtn.addEventListener('click', closeAllModals);
 
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            modal.classList.remove('active');
-            currentSelectedKidId = null;
+            closeAllModals();
         }
     });
 
@@ -116,15 +227,15 @@ function initStudentGrid() {
             } else {
                 console.error("Check-in error:", data.error);
             }
-            modal.classList.remove('active');
-            currentSelectedKidId = null;
+            closeAllModals();
         })
         .catch(err => {
             console.error("Fetch Check-in failure:", err);
-            modal.classList.remove('active');
+            closeAllModals();
         });
     });
 }
+
 
 // --- Dynamic Grid Statistics Recalculations ---
 function recalculateGridStats() {
@@ -341,3 +452,229 @@ function animateParticles() {
         animationId = null;
     }
 }
+
+// --- Unified Login Controller ---
+function initUnifiedLogin() {
+    const tabStudent = document.getElementById('tab-student');
+    const tabTeacher = document.getElementById('tab-teacher');
+    const studentSection = document.getElementById('student-login-section');
+    const teacherSection = document.getElementById('teacher-login-section');
+    const slider = document.querySelector('.login-tab-slider');
+
+    if (!tabStudent || !tabTeacher) return; // Not on unified login screen
+
+    // Tab Switching Logic
+    tabStudent.addEventListener('click', () => {
+        tabStudent.classList.add('active');
+        tabStudent.style.color = '#1e3a8a';
+        tabTeacher.classList.remove('active');
+        tabTeacher.style.color = '#475569';
+        if (slider) slider.style.left = '0.35rem';
+        if (studentSection) studentSection.style.display = 'block';
+        if (teacherSection) teacherSection.style.display = 'none';
+    });
+
+    tabTeacher.addEventListener('click', () => {
+        tabTeacher.classList.add('active');
+        tabTeacher.style.color = '#1e3a8a';
+        tabStudent.classList.remove('active');
+        tabStudent.style.color = '#475569';
+        if (slider) slider.style.left = 'calc(50% - 0.35rem)';
+        if (teacherSection) teacherSection.style.display = 'block';
+        if (studentSection) studentSection.style.display = 'none';
+    });
+
+    // Student Login State Variables
+    let selectedStudentId = null;
+    let selectedStudentName = '';
+    let selectedStudentEmoji = '🎒';
+    let selectedStudentColor = '#FDFFB6';
+    let selectedMood = 'happy';
+    let pinBuffer = '';
+
+    const studentSelect = document.getElementById('student-select');
+    const selectGroup = document.getElementById('student-select-group');
+    const keypadContainer = document.getElementById('student-keypad-container');
+    const moodContainer = document.getElementById('student-mood-container');
+    const successContainer = document.getElementById('student-success-container');
+    const moodWelcomeText = document.getElementById('student-mood-welcome');
+    const pinDots = document.querySelectorAll('#student-keypad-container .pin-dot');
+    const pinErrorMsg = document.getElementById('student-pin-error-msg');
+    const keypadButtons = document.querySelectorAll('.keypad-btn.student-key');
+    const moodButtons = document.querySelectorAll('#student-mood-container .mood-option-btn');
+    const submitBtn = document.getElementById('student-submit-checkin');
+    const resetBtn = document.getElementById('student-reset-btn');
+
+    function resetStudentPIN() {
+        pinBuffer = '';
+        pinDots.forEach(dot => dot.classList.remove('active'));
+        if (pinErrorMsg) pinErrorMsg.classList.remove('show');
+    }
+
+    // On Dropdown Change
+    studentSelect.addEventListener('change', () => {
+        const option = studentSelect.options[studentSelect.selectedIndex];
+        selectedStudentId = studentSelect.value;
+        selectedStudentName = option.getAttribute('data-name');
+        selectedStudentEmoji = option.getAttribute('data-emoji') || '🎒';
+        selectedStudentColor = option.getAttribute('data-color') || '#FDFFB6';
+
+        resetStudentPIN();
+        if (keypadContainer) keypadContainer.style.display = 'block';
+        if (moodContainer) moodContainer.style.display = 'none';
+        if (successContainer) successContainer.style.display = 'none';
+    });
+
+    // Keypad Logic
+    keypadButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!selectedStudentId) return;
+
+            const val = btn.getAttribute('data-val');
+            const action = btn.getAttribute('data-action');
+
+            if (val !== null) {
+                if (pinBuffer.length < 4) {
+                    pinBuffer += val;
+                    updateDots();
+                    if (pinBuffer.length === 4) {
+                        verifyStudentPIN();
+                    }
+                }
+            } else if (action === 'clear') {
+                resetStudentPIN();
+            } else if (action === 'backspace') {
+                if (pinBuffer.length > 0) {
+                    pinBuffer = pinBuffer.slice(0, -1);
+                    updateDots();
+                }
+            }
+        });
+    });
+
+    function updateDots() {
+        pinDots.forEach((dot, idx) => {
+            if (idx < pinBuffer.length) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }
+
+    function verifyStudentPIN() {
+        const formData = new FormData();
+        formData.append('student_id', selectedStudentId);
+        formData.append('pin_code', pinBuffer);
+
+        fetch(VERIFY_PIN_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Success - hide selection dropdown and keypad
+                if (selectGroup) selectGroup.style.display = 'none';
+                if (keypadContainer) keypadContainer.style.display = 'none';
+                if (moodWelcomeText) moodWelcomeText.textContent = `How are you feeling, ${selectedStudentName}?`;
+                
+                // Reset mood options highlight
+                moodButtons.forEach(b => b.classList.remove('selected'));
+                const defaultMoodBtn = document.querySelector('#student-mood-container .mood-option-btn[data-mood="happy"]');
+                if (defaultMoodBtn) defaultMoodBtn.classList.add('selected');
+                selectedMood = 'happy';
+                
+                if (moodContainer) moodContainer.style.display = 'block';
+            } else {
+                // Failed - Shake keypad container
+                if (keypadContainer) {
+                    keypadContainer.classList.add('shake');
+                    if (pinErrorMsg) {
+                        pinErrorMsg.textContent = data.error || 'Wrong PIN! 🤫';
+                        pinErrorMsg.classList.add('show');
+                    }
+                    setTimeout(() => {
+                        keypadContainer.classList.remove('shake');
+                    }, 500);
+                }
+                resetStudentPIN();
+            }
+        })
+        .catch(err => {
+            console.error("Unified Login PIN error:", err);
+            resetStudentPIN();
+        });
+    }
+
+    // Mood Selector Choices
+    moodButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            moodButtons.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedMood = btn.getAttribute('data-mood');
+        });
+    });
+
+    // Check-in Submit Handler
+    submitBtn.addEventListener('click', () => {
+        if (!selectedStudentId) return;
+
+        const formData = new FormData();
+        formData.append('student_id', selectedStudentId);
+        formData.append('status', 'present');
+        formData.append('mood', selectedMood);
+        formData.append('checked_by', 'child');
+
+        fetch(TOGGLE_ATTENDANCE_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Show Success screen
+                if (moodContainer) moodContainer.style.display = 'none';
+                
+                // Style Success Circle
+                const successCircle = document.getElementById('student-success-avatar-circle');
+                if (successCircle) {
+                    successCircle.textContent = selectedStudentEmoji;
+                    successCircle.style.backgroundColor = selectedStudentColor;
+                }
+                
+                const successMsg = document.getElementById('student-success-msg');
+                if (successMsg) {
+                    successMsg.innerHTML = `<strong>${selectedStudentName}</strong> is checked in for today!<br>Feeling: ${data.mood_emoji} ${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)}`;
+                }
+
+                if (successContainer) successContainer.style.display = 'block';
+
+                // Confetti at center of page
+                triggerConfetti(window.innerWidth / 2, window.innerHeight / 2 - 100);
+            } else {
+                console.error("Unified Login check-in failed:", data.error);
+            }
+        })
+        .catch(err => console.error("Unified Login fetch check-in failed:", err));
+    });
+
+    // Reset Forms
+    resetBtn.addEventListener('click', () => {
+        studentSelect.value = '';
+        if (selectGroup) selectGroup.style.display = 'block';
+        if (keypadContainer) keypadContainer.style.display = 'none';
+        if (moodContainer) moodContainer.style.display = 'none';
+        if (successContainer) successContainer.style.display = 'none';
+        resetStudentPIN();
+    });
+}
+

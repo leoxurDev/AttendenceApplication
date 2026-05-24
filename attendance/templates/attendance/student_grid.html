@@ -90,49 +90,92 @@
 <div class="modal-overlay" id="checkin-modal">
     <div class="kid-modal-card">
         <div class="modal-bubble-decor"></div>
-        <div class="modal-header-section">
-            <h2 id="modal-welcome-text">Hi Leo!</h2>
-            <p>
-                {% if current_time_period == 'morning' %}
-                    How are you feeling this morning? Choose a face!
-                {% elif current_time_period == 'afternoon' %}
-                    How are you feeling this afternoon? Choose a face!
-                {% else %}
-                    How are you feeling this evening? Choose a face!
-                {% endif %}
-            </p>
+        
+        <!-- SCREEN 1: PIN VERIFICATION -->
+        <div id="pin-screen-container">
+            <div class="modal-header-section">
+                <h2 id="pin-modal-welcome-text">Hi Leo!</h2>
+                <p>Enter your 4-digit PIN! 🔑</p>
+            </div>
+            
+            <!-- Visual Dots for PIN Code digits -->
+            <div class="pin-dots-container">
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+                <div class="pin-dot"></div>
+            </div>
+            
+            <!-- Error message bubble (initially hidden) -->
+            <div class="pin-error-message" id="pin-error-msg">Wrong PIN, try again! 🤫</div>
+            
+            <!-- Custom Keypad -->
+            <div class="pin-keypad-grid">
+                <button class="keypad-btn" data-val="1">1</button>
+                <button class="keypad-btn" data-val="2">2</button>
+                <button class="keypad-btn" data-val="3">3</button>
+                <button class="keypad-btn" data-val="4">4</button>
+                <button class="keypad-btn" data-val="5">5</button>
+                <button class="keypad-btn" data-val="6">6</button>
+                <button class="keypad-btn" data-val="7">7</button>
+                <button class="keypad-btn" data-val="8">8</button>
+                <button class="keypad-btn" data-val="9">9</button>
+                <button class="keypad-btn action-key" id="keypad-clear" data-action="clear">Clear</button>
+                <button class="keypad-btn" data-val="0">0</button>
+                <button class="keypad-btn action-key" id="keypad-backspace" data-action="backspace">⌫</button>
+            </div>
+            
+            <div class="modal-actions-wrapper" style="margin-top: 1.5rem;">
+                <button class="bubbly-btn cancel-btn" id="pin-modal-close-btn">Cancel</button>
+            </div>
         </div>
         
-        <!-- Mood Selector Choices -->
-        <div class="mood-selection-grid">
-            <button class="mood-option-btn selected" data-mood="happy">
-                <span class="mood-emoji">😊</span>
-                <span class="mood-label">Happy</span>
-            </button>
-            <button class="mood-option-btn" data-mood="excited">
-                <span class="mood-emoji">🤩</span>
-                <span class="mood-label">Excited</span>
-            </button>
-            <button class="mood-option-btn" data-mood="sleepy">
-                <span class="mood-emoji">🥱</span>
-                <span class="mood-label">Sleepy</span>
-            </button>
-            <button class="mood-option-btn" data-mood="silly">
-                <span class="mood-emoji">🤪</span>
-                <span class="mood-label">Silly</span>
-            </button>
-            <button class="mood-option-btn" data-mood="sad">
-                <span class="mood-emoji">😢</span>
-                <span class="mood-label">Sad</span>
-            </button>
-        </div>
-        
-        <!-- Submit Button -->
-        <div class="modal-actions-wrapper">
-            <button class="bubbly-btn cancel-btn" id="modal-close-btn">Cancel</button>
-            <button class="bubbly-btn primary-btn submit-checkin-btn" id="modal-submit-btn">
-                ✨ I'm Here! ✨
-            </button>
+        <!-- SCREEN 2: MOOD SELECTOR (initially hidden) -->
+        <div id="mood-screen-container" style="display: none;">
+            <div class="modal-header-section">
+                <h2 id="modal-welcome-text">Hi Leo!</h2>
+                <p>
+                    {% if current_time_period == 'morning' %}
+                        How are you feeling this morning? Choose a face!
+                    {% elif current_time_period == 'afternoon' %}
+                        How are you feeling this afternoon? Choose a face!
+                    {% else %}
+                        How are you feeling this evening? Choose a face!
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- Mood Selector Choices -->
+            <div class="mood-selection-grid">
+                <button class="mood-option-btn selected" data-mood="happy">
+                    <span class="mood-emoji">😊</span>
+                    <span class="mood-label">Happy</span>
+                </button>
+                <button class="mood-option-btn" data-mood="excited">
+                    <span class="mood-emoji">🤩</span>
+                    <span class="mood-label">Excited</span>
+                </button>
+                <button class="mood-option-btn" data-mood="sleepy">
+                    <span class="mood-emoji">🥱</span>
+                    <span class="mood-label">Sleepy</span>
+                </button>
+                <button class="mood-option-btn" data-mood="silly">
+                    <span class="mood-emoji">🤪</span>
+                    <span class="mood-label">Silly</span>
+                </button>
+                <button class="mood-option-btn" data-mood="sad">
+                    <span class="mood-emoji">😢</span>
+                    <span class="mood-label">Sad</span>
+                </button>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="modal-actions-wrapper">
+                <button class="bubbly-btn cancel-btn" id="modal-close-btn">Cancel</button>
+                <button class="bubbly-btn primary-btn submit-checkin-btn" id="modal-submit-btn">
+                    ✨ I'm Here! ✨
+                </button>
+            </div>
         </div>
     </div>
 </div>

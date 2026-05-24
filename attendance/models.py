@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import RegexValidator
 
 
 class ClassroomOption(models.Model):
@@ -65,6 +66,11 @@ class Student(models.Model):
     avatar_color = models.CharField(max_length=7)
     is_active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    pin_code = models.CharField(
+        max_length=4,
+        default="1234",
+        validators=[RegexValidator(r'^\d{4}$', 'PIN code must be exactly 4 digits.')]
+    )
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.classroom})"
