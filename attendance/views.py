@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, get_list_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
+import csv
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.contrib import messages
@@ -181,4 +182,49 @@ def delete_student(request, pk):
         messages.warning(request, f"Goodbye {student.full_name}! 👋")
         return redirect('teacher_dashboard')
     return render(request, 'attendance/student_confirm_delete.html', {'student': student})
+
+
+def export_student_csv(request):
+    classroom_filter = request.GET.get('classroom', 'All')
+    
+    # Filter active students based on classroom
+    students = Student.objects.filter(is_active=True)
+    if classroom_filter != 'All':
+        students = students.filter(classroom=classroom_filter)
+        
+    students = students.order_by('classroom', 'first_name')
+    today = timezone.localdate()
+    
+    # Today's attendance pre-fetch
+    today_attendances = {
+        att.student_id: att 
+        for att in Attendance.objects.filter(date=today)
+    }
+    
+    response = HttpResponse(content_type='text/csv')
+    filename = f"kindergarten_attendance_{classroom_filter}_{today}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Student ID', 'First Name', 'Last Name', 'Classroom', 
+        'Avatar Emoji', 'Today Status', 'Today Mood', 'Today Check-in Time'
+    ])
+    
+    for s in students:
+        att = today_attendances.get(s.id)
+        status = att.status if att else 'absent'
+        mood = att.get_mood_display() if (att and att.mood) else '-'
+        
+        if att and att.status != 'absent':
+            checkin_time = timezone.localtime(att.checked_in_at).strftime('%I:%M %p')
+        else:
+            checkin_time = '-'
+            
+        writer.writerow([
+            s.id, s.first_name, s.last_name, s.classroom,
+            s.avatar_emoji, status.capitalize(), mood, checkin_time
+        ])
+        
+    return response
 

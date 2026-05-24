@@ -1000,3 +1000,18 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-actions-wrapper .cancel-btn:hover { box-shadow: 0 9px 0 #64748b; }
 .form-actions-wrapper .cancel-btn:active { box-shadow: 0 3px 0 #64748b; }
+
+.admin-nav-buttons .export-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #f59e0b;
+    box-shadow: 0 6px 0 #b45309;
+}
+
+.admin-nav-buttons .export-btn:hover {
+    box-shadow: 0 9px 0 #b45309;
+}
+
+.admin-nav-buttons .export-btn:active {
+    box-shadow: 0 3px 0 #b45309;
+}
+

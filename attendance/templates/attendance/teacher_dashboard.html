@@ -20,6 +20,9 @@
             <a href="{% url 'add_student' %}" class="bubbly-btn secondary-btn add-btn">
                 ➕ Add Student
             </a>
+            <a href="{% url 'export_student_csv' %}?classroom={{ selected_classroom }}" class="bubbly-btn export-btn">
+                📥 Export CSV
+            </a>
         </div>
     </div>
 
