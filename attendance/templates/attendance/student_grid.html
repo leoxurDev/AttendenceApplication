@@ -18,8 +18,8 @@
 
 <!-- Classroom Selection Tabs -->
 <div class="class-picker-row">
-    {% for code, label in classrooms %}
-        <a href="?classroom={{ code }}" class="class-tab-btn {% if code == selected_classroom %}active{% endif %}">
+    {% for classroom_name, label in classrooms %}
+        <a href="?classroom={{ classroom_name }}" class="class-tab-btn {% if classroom_name == selected_classroom_name %}active{% endif %}">
             {{ label }}
         </a>
     {% endfor %}
@@ -92,7 +92,15 @@
         <div class="modal-bubble-decor"></div>
         <div class="modal-header-section">
             <h2 id="modal-welcome-text">Hi Leo!</h2>
-            <p>How are you feeling this morning? Choose a face!</p>
+            <p>
+                {% if current_time_period == 'morning' %}
+                    How are you feeling this morning? Choose a face!
+                {% elif current_time_period == 'afternoon' %}
+                    How are you feeling this afternoon? Choose a face!
+                {% else %}
+                    How are you feeling this evening? Choose a face!
+                {% endif %}
+            </p>
         </div>
         
         <!-- Mood Selector Choices -->

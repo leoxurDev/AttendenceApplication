@@ -5,24 +5,40 @@ import csv
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.contrib import messages
-from .models import Student, Attendance
+from .models import Student, Attendance, ClassroomOption
 from .forms import StudentForm
 
 def student_grid(request):
-    selected_classroom = request.GET.get('classroom', 'Bumblebees')
+    selected_classroom_name = request.GET.get('classroom')
     
-    # Verify valid classroom
-    valid_classrooms = [c[0] for c in Student.CLASSROOM_CHOICES]
-    if selected_classroom not in valid_classrooms:
-        selected_classroom = 'Bumblebees'
+    # Get all active classrooms
+    all_classrooms = ClassroomOption.objects.filter(is_active=True).order_by('order')
+    
+    # Default to first classroom if not provided
+    if not selected_classroom_name:
+        selected_classroom = all_classrooms.first()
+        if not selected_classroom:
+            return render(request, 'attendance/student_grid.html', {'error': 'No active classrooms found'})
+        selected_classroom_name = selected_classroom.name
+        selected_classroom_display = selected_classroom.display_value
+    else:
+        try:
+            selected_classroom = all_classrooms.get(name=selected_classroom_name)
+            selected_classroom_display = selected_classroom.display_value
+        except ClassroomOption.DoesNotExist:
+            selected_classroom = all_classrooms.first()
+            if not selected_classroom:
+                return render(request, 'attendance/student_grid.html', {'error': 'No active classrooms found'})
+            selected_classroom_name = selected_classroom.name
+            selected_classroom_display = selected_classroom.display_value
         
-    students = Student.objects.filter(classroom=selected_classroom, is_active=True).order_by('first_name')
+    students = Student.objects.filter(classroom=selected_classroom_name, is_active=True).order_by('first_name')
     today = timezone.localdate()
     
     # Prefetch today's attendance records to avoid N+1 queries
     today_attendances = {
         att.student_id: att 
-        for att in Attendance.objects.filter(date=today, student__classroom=selected_classroom)
+        for att in Attendance.objects.filter(date=today, student__classroom=selected_classroom_name)
     }
     
     # Attach attendance record to student objects
@@ -33,18 +49,21 @@ def student_grid(request):
     present_today = sum(1 for s in students if s.today_status and s.today_status.status in ['present', 'late'])
     attendance_rate = int((present_today / total_students * 100)) if total_students > 0 else 0
     
-    classrooms_display = Student.CLASSROOM_CHOICES
+    classrooms_display = [(c.name, c.display_value) for c in all_classrooms]
     mood_choices = Attendance.MOOD_CHOICES
+    current_time_period = Attendance.get_current_time_period()
 
     context = {
         'students': students,
-        'selected_classroom': selected_classroom,
+        'selected_classroom': selected_classroom_display,
+        'selected_classroom_name': selected_classroom_name,
         'classrooms': classrooms_display,
         'total_students': total_students,
         'present_today': present_today,
         'attendance_rate': attendance_rate,
         'mood_choices': mood_choices,
         'today': today,
+        'current_time_period': current_time_period,
     }
     return render(request, 'attendance/student_grid.html', context)
 
@@ -134,7 +153,8 @@ def teacher_dashboard(request):
 
     attendance_percentage = int(( (present_count + late_count) / total_students * 100)) if total_students > 0 else 0
 
-    classrooms = [('All', 'All Classes 🏫')] + Student.CLASSROOM_CHOICES
+    active_classrooms = ClassroomOption.objects.filter(is_active=True).order_by('order')
+    classrooms = [('All', 'All Classes 🏫')] + [(c.name, c.display_value) for c in active_classrooms]
 
     context = {
         'students': students,
@@ -208,13 +228,14 @@ def export_student_csv(request):
     writer = csv.writer(response)
     writer.writerow([
         'Student ID', 'First Name', 'Last Name', 'Classroom', 
-        'Avatar Emoji', 'Today Status', 'Today Mood', 'Today Check-in Time'
+        'Avatar Emoji', 'Today Status', 'Today Mood', 'Time Period', 'Today Check-in Time'
     ])
     
     for s in students:
         att = today_attendances.get(s.id)
         status = att.status if att else 'absent'
         mood = att.get_mood_display() if (att and att.mood) else '-'
+        time_period = att.get_time_period_display() if (att and att.time_period) else '-'
         
         if att and att.status != 'absent':
             checkin_time = timezone.localtime(att.checked_in_at).strftime('%I:%M %p')
@@ -223,7 +244,7 @@ def export_student_csv(request):
             
         writer.writerow([
             s.id, s.first_name, s.last_name, s.classroom,
-            s.avatar_emoji, status.capitalize(), mood, checkin_time
+            s.avatar_emoji, status.capitalize(), mood, time_period, checkin_time
         ])
         
     return response
