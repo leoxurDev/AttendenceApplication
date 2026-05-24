@@ -1,0 +1,39 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}{{ title }} | Kindergarten Admin{% endblock %}
+
+{% block content %}
+<div class="form-page-container">
+    <div class="kid-modal-card form-card">
+        <div class="modal-bubble-decor"></div>
+        
+        <div class="modal-header-section">
+            <h2>{{ title }}</h2>
+            <p>Fill in the details below to add a kid to the class roster! 🎒</p>
+        </div>
+        
+        <form method="POST" class="bubbly-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group-bubbly">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="field-error-bubble">
+                            {{ field.errors.as_text }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="form-actions-wrapper" style="margin-top: 2rem;">
+                <a href="{% url 'teacher_dashboard' %}" class="bubbly-btn cancel-btn">Cancel</a>
+                <button type="submit" class="bubbly-btn primary-btn">
+                    Save Student ✨
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

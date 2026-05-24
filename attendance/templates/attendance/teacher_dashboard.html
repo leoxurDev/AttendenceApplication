@@ -1,0 +1,147 @@
+{% extends 'attendance/base.html' %}
+{% load static %}
+
+{% block title %}Teacher Admin Portal | Kindergarten Attendance{% endblock %}
+
+{% block content %}
+<div class="teacher-dashboard-container">
+    <!-- Nav Header -->
+    <div class="grid-header">
+        <div class="school-logo-bubble admin-logo">
+            <span class="logo-emoji">🔑</span>
+            <h1>Teacher Portal</h1>
+            <p>Classroom Management & Registers 📝</p>
+        </div>
+        
+        <div class="admin-nav-buttons">
+            <a href="{% url 'student_grid' %}" class="bubbly-btn primary-btn" style="background: var(--primary-gradient)">
+                🏠 Kids Check-in Screen
+            </a>
+            <a href="{% url 'add_student' %}" class="bubbly-btn secondary-btn add-btn">
+                ➕ Add Student
+            </a>
+        </div>
+    </div>
+
+    <!-- Django Success/Error Messages -->
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="message-alert {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Classroom Filter selector -->
+    <div class="teacher-control-bar">
+        <form method="GET" class="filter-form">
+            <label for="class-filter">Classroom Filter:</label>
+            <select name="classroom" id="class-filter" class="form-select inline-select" onchange="this.form.submit()">
+                {% for code, label in classrooms %}
+                    <option value="{{ code }}" {% if code == selected_classroom %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        
+        <div class="stats-pills-row">
+            <div class="mini-stat-card present">
+                <span class="value">{{ present_count }}</span>
+                <span class="label">Present</span>
+            </div>
+            <div class="mini-stat-card late">
+                <span class="value">{{ late_count }}</span>
+                <span class="label">Late</span>
+            </div>
+            <div class="mini-stat-card absent">
+                <span class="value">{{ absent_count }}</span>
+                <span class="label">Absent</span>
+            </div>
+            <div class="mini-stat-card rate">
+                <span class="value">{{ attendance_percentage }}%</span>
+                <span class="label">Attendance</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Attendance List Table -->
+    <div class="table-card">
+        <table class="kids-admin-table">
+            <thead>
+                <tr>
+                    <th>Avatar</th>
+                    <th>Full Name</th>
+                    <th>Classroom</th>
+                    <th>Today's Attendance Status</th>
+                    <th>Checked In At</th>
+                    <th>Morning Mood</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                    <tr data-student-id="{{ student.id }}">
+                        <td>
+                            <div class="table-avatar" style="background-color: {{ student.avatar_color }}">
+                                {{ student.avatar_emoji }}
+                            </div>
+                        </td>
+                        <td>
+                            <strong class="student-table-name">{{ student.full_name }}</strong>
+                        </td>
+                        <td>
+                            <span class="table-classroom-badge">{{ student.get_classroom_display }}</span>
+                        </td>
+                        <td>
+                            <!-- Teacher Quick Attendance Actions -->
+                            <div class="attendance-action-pills">
+                                <button class="status-action-btn present-btn {% if student.today_status and student.today_status.status == 'present' %}active{% endif %}" 
+                                        data-status="present" data-student="{{ student.id }}">
+                                    Present ☀️
+                                </button>
+                                <button class="status-action-btn late-btn {% if student.today_status and student.today_status.status == 'late' %}active{% endif %}" 
+                                        data-status="late" data-student="{{ student.id }}">
+                                    Late ⏰
+                                </button>
+                                <button class="status-action-btn absent-btn {% if not student.today_status or student.today_status.status == 'absent' %}active{% endif %}" 
+                                        data-status="absent" data-student="{{ student.id }}">
+                                    Absent 🌙
+                                </button>
+                            </div>
+                        </td>
+                        <td class="checked-time-cell">
+                            {% if student.today_status and student.today_status.status != 'absent' %}
+                                {{ student.today_status.checked_in_at|date:"g:i A" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="mood-cell">
+                            {% if student.today_status and student.today_status.mood %}
+                                <span class="mood-display-pill">
+                                    {{ student.today_status.get_mood_display }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="admin-row-actions">
+                                <a href="{% url 'edit_student' student.id %}" class="action-btn edit" title="Edit Student">✏️</a>
+                                <a href="{% url 'delete_student' student.id %}" class="action-btn delete" title="Delete Student">🗑️</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="table-empty-state">
+                            No students registered. Click "Add Student" above to populate the school!
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

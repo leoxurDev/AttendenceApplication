@@ -1,0 +1,131 @@
+{% extends 'attendance/base.html' %}
+{% load static %}
+
+{% block title %}Kids Check-in Grid | FocusFlow School{% endblock %}
+
+{% block content %}
+<div class="grid-header">
+    <div class="school-logo-bubble">
+        <span class="logo-emoji">🏫</span>
+        <h1>FocusFlow Academy</h1>
+        <p>Morning Check-in Portal 🎈</p>
+    </div>
+    
+    <a href="{% url 'teacher_dashboard' %}" class="bubbly-btn secondary-btn admin-badge-btn">
+        🔑 Teacher Area
+    </a>
+</div>
+
+<!-- Classroom Selection Tabs -->
+<div class="class-picker-row">
+    {% for code, label in classrooms %}
+        <a href="?classroom={{ code }}" class="class-tab-btn {% if code == selected_classroom %}active{% endif %}">
+            {{ label }}
+        </a>
+    {% endfor %}
+</div>
+
+<!-- Interactive Stats Banner -->
+<div class="stats-cloud-banner">
+    <div class="stat-pill">
+        <span class="stat-pill-icon">🎒</span>
+        <span class="stat-pill-text"><strong>{{ total_students }}</strong> Kids registered</span>
+    </div>
+    <div class="stat-pill">
+        <span class="stat-pill-icon">☀️</span>
+        <span class="stat-pill-text"><strong>{{ present_today }}</strong> Here today</span>
+    </div>
+    <div class="stat-pill progress-pill">
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: {{ attendance_rate }}%"></div>
+        </div>
+        <span class="progress-percent-text">{{ attendance_rate }}% Present</span>
+    </div>
+</div>
+
+<!-- Students Grid -->
+<div class="kids-grid-container">
+    {% for student in students %}
+        <div class="kid-card {% if student.today_status and student.today_status.status == 'present' %}checked-in{% endif %}" 
+             data-id="{{ student.id }}" 
+             data-name="{{ student.first_name }}"
+             style="--kid-color: {{ student.avatar_color }}">
+             
+             <!-- Cute Animal Badge -->
+             <div class="kid-avatar-wrapper">
+                 <span class="kid-emoji">{{ student.avatar_emoji }}</span>
+                 <div class="status-indicator-badge">
+                     {% if student.today_status and student.today_status.status == 'present' %}
+                         ☀️
+                     {% else %}
+                         🌙
+                     {% endif %}
+                 </div>
+             </div>
+             
+             <h2 class="kid-name">{{ student.first_name }}</h2>
+             
+             <!-- Subtext depending on attendance status -->
+             <p class="kid-status-text">
+                 {% if student.today_status and student.today_status.status == 'present' %}
+                     Checked in at {{ student.today_status.checked_in_at|date:"g:i A" }} <br>
+                     Feeling: {% if student.today_status.mood == 'happy' %}😊{% elif student.today_status.mood == 'excited' %}🤩{% elif student.today_status.mood == 'sleepy' %}🥱{% elif student.today_status.mood == 'silly' %}🤪{% elif student.today_status.mood == 'sad' %}😢{% else %}✨{% endif %}
+                 {% else %}
+                     Tap to check in!
+                 {% endif %}
+             </p>
+        </div>
+    {% empty %}
+        <div class="empty-classroom-card">
+            <h2>Oh, look! 🍃</h2>
+            <p>No little buddies registered in the <strong>{{ selected_classroom }}</strong> classroom yet.</p>
+            <a href="{% url 'add_student' %}" class="bubbly-btn primary-btn" style="margin-top: 1rem; display: inline-block;">
+                ➕ Add a Student
+            </a>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Interactive Check-in Modal Overlay -->
+<div class="modal-overlay" id="checkin-modal">
+    <div class="kid-modal-card">
+        <div class="modal-bubble-decor"></div>
+        <div class="modal-header-section">
+            <h2 id="modal-welcome-text">Hi Leo!</h2>
+            <p>How are you feeling this morning? Choose a face!</p>
+        </div>
+        
+        <!-- Mood Selector Choices -->
+        <div class="mood-selection-grid">
+            <button class="mood-option-btn selected" data-mood="happy">
+                <span class="mood-emoji">😊</span>
+                <span class="mood-label">Happy</span>
+            </button>
+            <button class="mood-option-btn" data-mood="excited">
+                <span class="mood-emoji">🤩</span>
+                <span class="mood-label">Excited</span>
+            </button>
+            <button class="mood-option-btn" data-mood="sleepy">
+                <span class="mood-emoji">🥱</span>
+                <span class="mood-label">Sleepy</span>
+            </button>
+            <button class="mood-option-btn" data-mood="silly">
+                <span class="mood-emoji">🤪</span>
+                <span class="mood-label">Silly</span>
+            </button>
+            <button class="mood-option-btn" data-mood="sad">
+                <span class="mood-emoji">😢</span>
+                <span class="mood-label">Sad</span>
+            </button>
+        </div>
+        
+        <!-- Submit Button -->
+        <div class="modal-actions-wrapper">
+            <button class="bubbly-btn cancel-btn" id="modal-close-btn">Cancel</button>
+            <button class="bubbly-btn primary-btn submit-checkin-btn" id="modal-submit-btn">
+                ✨ I'm Here! ✨
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

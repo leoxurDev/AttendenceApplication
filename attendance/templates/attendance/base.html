@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kindergarten Attendance{% endblock %}</title>
+    <!-- Playful Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+    <!-- Kid Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/kid_theme.css' %}">
+    <!-- CSRF Token for JS AJAX -->
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+        const TOGGLE_ATTENDANCE_URL = "{% url 'toggle_attendance' %}";
+    </script>
+</head>
+<body>
+    <!-- Confetti layer for celebrations -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="sky-background">
+        <!-- Floating cartoon clouds -->
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        <div class="cloud cloud-3"></div>
+        
+        <div class="main-wrapper">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Kid Attendance Script -->
+    <script src="{% static 'js/kid_attendance.js' %}"></script>
+</body>
+</html>

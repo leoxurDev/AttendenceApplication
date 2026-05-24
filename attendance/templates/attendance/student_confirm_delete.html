@@ -1,0 +1,30 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Delete {{ student.first_name }} | Kindergarten Admin{% endblock %}
+
+{% block content %}
+<div class="form-page-container">
+    <div class="kid-modal-card form-card confirm-delete-card">
+        <div class="modal-bubble-decor" style="background: var(--priority-high-glow)"></div>
+        
+        <div class="modal-header-section">
+            <h2 style="color: var(--priority-high-solid)">Are you sure? 😮</h2>
+            <p>You are about to remove <strong>{{ student.full_name }}</strong> from the active school roster.</p>
+        </div>
+        
+        <form method="POST" class="bubbly-form">
+            {% csrf_token %}
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">
+                This will keep their history but hide them from the morning check-in grid.
+            </p>
+            
+            <div class="form-actions-wrapper">
+                <a href="{% url 'teacher_dashboard' %}" class="bubbly-btn cancel-btn">No, Keep Student</a>
+                <button type="submit" class="bubbly-btn primary-btn delete-btn-real" style="background: var(--priority-high-solid); box-shadow: 0 6px 12px var(--priority-high-glow)">
+                    Yes, Remove 👋
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
