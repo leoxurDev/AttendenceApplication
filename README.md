@@ -131,8 +131,75 @@ To restore the application to its default seeded state and run tests, use the fo
 
 ---
 
+## 🚀 Docker Deployment on AWS EC2 (Step-by-Step)
+
+Follow these instructions to deploy this application in a Docker container on a fresh AWS EC2 instance:
+
+### Step 1: Launch your EC2 Instance
+1. Log in to your **AWS Console** and navigate to the **EC2 Dashboard**.
+2. Click **Launch Instance**.
+3. Select **Ubuntu Server 22.04 LTS** (or 24.04 LTS) as the Machine Image (AMI).
+4. Choose an instance type (e.g. `t2.micro` or `t3.micro` which are Free Tier eligible).
+5. Generate or choose an SSH Key Pair (`.pem`) for connection.
+6. Under **Security Groups / Network Settings**:
+   * Allow **SSH (port 22)** from your IP address.
+   * Allow **HTTP (port 80)** from anywhere (`0.0.0.0/0`).
+7. Click **Launch Instance**.
+
+### Step 2: Connect to your EC2 Instance
+Open your local terminal and connect via SSH using your key pair:
+```bash
+ssh -i /path/to/your-key.pem ubuntu@<your-ec2-public-ip>
+```
+
+### Step 3: Install Docker & Docker Compose
+Run the following commands on your EC2 terminal:
+```bash
+# Update Ubuntu package index
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Install Docker
+sudo apt-get install -y docker.io
+
+# Start and enable Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Allow running docker command without sudo (optional)
+sudo usermod -aG docker ubuntu
+
+# Install Docker Compose
+sudo apt-get install -y docker-compose
+```
+*Note: Disconnect from SSH and log back in to apply the group membership updates.*
+
+### Step 4: Clone Repository & Deploy Application
+1. Clone the repository to the EC2 server:
+   ```bash
+   git clone https://github.com/leoxurDev/AttendenceApplication.git
+   cd AttendenceApplication
+   ```
+2. Initialize and seed mock data in the SQLite database file:
+   ```bash
+   docker-compose run --rm web python seed_data.py
+   ```
+3. Run the container in the background (daemon mode):
+   ```bash
+   docker-compose up --build -d
+   ```
+
+### Step 5: Access the Web Application
+Open your web browser and enter the public IP of your EC2 instance:
+```
+http://<your-ec2-public-ip>/
+```
+Your FocusFlow Kindergarten app is now live and containerized!
+
+---
+
 ## 📸 Architecture Diagram & UI Layout Reference
 
 The following image represents the visual layout hierarchy and block structure of our student check-in portal:
 
 ![Architecture Layout Diagram](file:///Users/hariprasathm/VirtualBox%20VMs/KindergartenApp/static/images/architecture.png)
+
