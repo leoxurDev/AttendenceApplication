@@ -4,27 +4,32 @@
 {% block title %}Kids Check-in Grid | FocusFlow School{% endblock %}
 
 {% block content %}
+
+{% for block in layout_blocks %}
+{% if block.is_visible %}
+{% if block.block_id == 'header' %}
 <div class="grid-header">
     <div class="school-logo-bubble">
         <span class="logo-emoji">🏫</span>
         <h1>FocusFlow Academy</h1>
         <p>Morning Check-in Portal 🎈</p>
     </div>
-    
+
     <a href="{% url 'teacher_dashboard' %}" class="bubbly-btn secondary-btn admin-badge-btn">
         🔑 Teacher Area
     </a>
 </div>
-
+{% elif block.block_id == 'classroom_tabs' %}
 <!-- Classroom Selection Tabs -->
 <div class="class-picker-row">
     {% for classroom_name, label in classrooms %}
-        <a href="?classroom={{ classroom_name }}" class="class-tab-btn {% if classroom_name == selected_classroom_name %}active{% endif %}">
-            {{ label }}
-        </a>
+    <a href="?classroom={{ classroom_name }}"
+        class="class-tab-btn {% if classroom_name == selected_classroom_name %}active{% endif %}">
+        {{ label }}
+    </a>
     {% endfor %}
 </div>
-
+{% elif block.block_id == 'stats_banner' %}
 <!-- Interactive Stats Banner -->
 <div class="stats-cloud-banner">
     <div class="stat-pill">
@@ -42,62 +47,67 @@
         <span class="progress-percent-text">{{ attendance_rate }}% Present</span>
     </div>
 </div>
-
+{% elif block.block_id == 'student_grid' %}
 <!-- Students Grid -->
 <div class="kids-grid-container">
     {% for student in students %}
-        <div class="kid-card {% if student.today_status and student.today_status.status == 'present' %}checked-in{% endif %}" 
-             data-id="{{ student.id }}" 
-             data-name="{{ student.first_name }}"
-             style="--kid-color: {{ student.avatar_color }}">
-             
-             <!-- Cute Animal Badge -->
-             <div class="kid-avatar-wrapper">
-                 <span class="kid-emoji">{{ student.avatar_emoji }}</span>
-                 <div class="status-indicator-badge">
-                     {% if student.today_status and student.today_status.status == 'present' %}
-                         ☀️
-                     {% else %}
-                         🌙
-                     {% endif %}
-                 </div>
-             </div>
-             
-             <h2 class="kid-name">{{ student.first_name }}</h2>
-             
-             <!-- Subtext depending on attendance status -->
-             <p class="kid-status-text">
-                 {% if student.today_status and student.today_status.status == 'present' %}
-                     Checked in at {{ student.today_status.checked_in_at|date:"g:i A" }} <br>
-                     Feeling: {% if student.today_status.mood == 'happy' %}😊{% elif student.today_status.mood == 'excited' %}🤩{% elif student.today_status.mood == 'sleepy' %}🥱{% elif student.today_status.mood == 'silly' %}🤪{% elif student.today_status.mood == 'sad' %}😢{% else %}✨{% endif %}
-                 {% else %}
-                     Tap to check in!
-                 {% endif %}
-             </p>
+    <div class="kid-card {% if student.today_status and student.today_status.status != 'absent' %}checked-in{% endif %} {% if student.today_status and student.today_status.status == 'late' %}checked-in-late{% endif %}"
+        data-id="{{ student.id }}" data-name="{{ student.first_name }}" style="--kid-color: {{ student.avatar_color }}">
+
+        <!-- Cute Animal Badge -->
+        <div class="kid-avatar-wrapper">
+            <span class="kid-emoji">{{ student.avatar_emoji }}</span>
+            <div class="status-indicator-badge">
+                {% if student.today_status and student.today_status.status != 'absent' %}
+                {% if student.today_status.status == 'late' %}⏰{% else %}☀️{% endif %}
+                {% else %}
+                🌙
+                {% endif %}
+            </div>
         </div>
+
+        <h2 class="kid-name">{{ student.first_name }}</h2>
+
+        <!-- Subtext depending on attendance status -->
+        <p class="kid-status-text">
+            {% if student.today_status and student.today_status.status != 'absent' %}
+            Checked in {% if student.today_status.status == 'late' %}(Late){% endif %} at {{
+            student.today_status.checked_in_at|date:"g:i A" }} <br>
+            Feeling: {% if student.today_status.mood == 'happy' %}😊{% elif student.today_status.mood == 'excited'
+            %}🤩{% elif student.today_status.mood == 'sleepy' %}🥱{% elif student.today_status.mood == 'silly' %}🤪{%
+            elif student.today_status.mood == 'sad' %}😢{% else %}✨{% endif %}
+            {% else %}
+            Tap to check in!
+            {% endif %}
+        </p>
+    </div>
     {% empty %}
-        <div class="empty-classroom-card">
-            <h2>Oh, look! 🍃</h2>
-            <p>No little buddies registered in the <strong>{{ selected_classroom }}</strong> classroom yet.</p>
-            <a href="{% url 'add_student' %}" class="bubbly-btn primary-btn" style="margin-top: 1rem; display: inline-block;">
-                ➕ Add a Student
-            </a>
-        </div>
+    <div class="empty-classroom-card">
+        <h2>Oh, look! 🍃</h2>
+        <p>No little buddies registered in the <strong>{{ selected_classroom }}</strong> classroom yet.</p>
+        <a href="{% url 'add_student' %}" class="bubbly-btn primary-btn"
+            style="margin-top: 1rem; display: inline-block;">
+            ➕ Add a Student
+        </a>
+    </div>
     {% endfor %}
 </div>
+{% endif %}
+{% endif %}
+{% endfor %}
 
 <!-- Interactive Check-in Modal Overlay -->
 <div class="modal-overlay" id="checkin-modal">
     <div class="kid-modal-card">
         <div class="modal-bubble-decor"></div>
-        
+
         <!-- SCREEN 1: PIN VERIFICATION -->
         <div id="pin-screen-container">
             <div class="modal-header-section">
                 <h2 id="pin-modal-welcome-text">Hi Leo!</h2>
                 <p>Enter your 4-digit PIN! 🔑</p>
             </div>
-            
+
             <!-- Visual Dots for PIN Code digits -->
             <div class="pin-dots-container">
                 <div class="pin-dot"></div>
@@ -105,10 +115,10 @@
                 <div class="pin-dot"></div>
                 <div class="pin-dot"></div>
             </div>
-            
+
             <!-- Error message bubble (initially hidden) -->
             <div class="pin-error-message" id="pin-error-msg">Wrong PIN, try again! 🤫</div>
-            
+
             <!-- Custom Keypad -->
             <div class="pin-keypad-grid">
                 <button class="keypad-btn" data-val="1">1</button>
@@ -124,27 +134,27 @@
                 <button class="keypad-btn" data-val="0">0</button>
                 <button class="keypad-btn action-key" id="keypad-backspace" data-action="backspace">⌫</button>
             </div>
-            
+
             <div class="modal-actions-wrapper" style="margin-top: 1.5rem;">
                 <button class="bubbly-btn cancel-btn" id="pin-modal-close-btn">Cancel</button>
             </div>
         </div>
-        
+
         <!-- SCREEN 2: MOOD SELECTOR (initially hidden) -->
         <div id="mood-screen-container" style="display: none;">
             <div class="modal-header-section">
                 <h2 id="modal-welcome-text">Hi Leo!</h2>
                 <p>
                     {% if current_time_period == 'morning' %}
-                        How are you feeling this morning? Choose a face!
+                    How are you feeling this morning? Choose a face!
                     {% elif current_time_period == 'afternoon' %}
-                        How are you feeling this afternoon? Choose a face!
+                    How are you feeling this afternoon? Choose a face!
                     {% else %}
-                        How are you feeling this evening? Choose a face!
+                    How are you feeling this evening? Choose a face!
                     {% endif %}
                 </p>
             </div>
-            
+
             <!-- Mood Selector Choices -->
             <div class="mood-selection-grid">
                 <button class="mood-option-btn selected" data-mood="happy">
@@ -168,7 +178,7 @@
                     <span class="mood-label">Sad</span>
                 </button>
             </div>
-            
+
             <!-- Submit Button -->
             <div class="modal-actions-wrapper">
                 <button class="bubbly-btn cancel-btn" id="modal-close-btn">Cancel</button>

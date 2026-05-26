@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Unified Login Page Controller
     initUnifiedLogin();
+
+    // Developer Page Layout Builder and AI Assistant
+    initDeveloperPage();
 });
 
 // --- State Variables ---
@@ -210,9 +213,11 @@ function initStudentGrid() {
                         card.querySelector('.kid-status-text').innerHTML = 'Tap to check in!';
                     } else {
                         card.classList.add('checked-in');
-                        card.querySelector('.status-indicator-badge').textContent = '☀️';
+                        const statusEmoji = data.status === 'late' ? '⏰' : '☀️';
+                        card.querySelector('.status-indicator-badge').textContent = statusEmoji;
+                        const lateLabel = data.status === 'late' ? ' (Late)' : '';
                         card.querySelector('.kid-status-text').innerHTML = `
-                            Checked in at ${data.time} <br>
+                            Checked in${lateLabel} at ${data.time} <br>
                             Feeling: ${data.mood_emoji}
                         `;
                         
@@ -278,52 +283,146 @@ function initTeacherDashboard() {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
-                    if (row) {
-                        // Deactivate all status buttons in this row
-                        const rowBtns = row.querySelectorAll('.status-action-btn');
-                        rowBtns.forEach(b => b.classList.remove('active'));
-
-                        // Activate the target status button
-                        const activeBtn = row.querySelector(`.status-action-btn[data-status="${data.status}"]`);
-                        if (activeBtn) activeBtn.classList.add('active');
-
-                        // Update Checked-in time cell
-                        const timeCell = row.querySelector('.checked-time-cell');
-                        if (timeCell) {
-                            timeCell.textContent = (data.status !== 'absent') ? data.time : '-';
+                    // Update all status buttons for this student (both list & grid views)
+                    const studentButtons = document.querySelectorAll(`.status-action-btn[data-student="${studentId}"]`);
+                    studentButtons.forEach(b => {
+                        if (b.getAttribute('data-status') === data.status) {
+                            b.classList.add('active');
+                        } else {
+                            b.classList.remove('active');
                         }
+                    });
 
-                        // Update Mood display cell
-                        const moodCell = row.querySelector('.mood-cell');
-                        if (moodCell) {
-                            moodCell.textContent = (data.status !== 'absent' && data.mood_emoji) ? `${data.mood} ${data.mood_emoji}` : '-';
-                        }
+                    // Update Checked-in time displays
+                    const timeCells = document.querySelectorAll(`[data-student-id="${studentId}"] .checked-time-cell`);
+                    timeCells.forEach(cell => {
+                        cell.textContent = (data.status !== 'absent') ? data.time : '-';
+                    });
 
-                        // Sparkle confetti effect on the clicked button if marked present
-                        if (data.status === 'present') {
-                            const rect = btn.getBoundingClientRect();
-                            triggerConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
-                        }
+                    // Update Mood display cells
+                    const moodCells = document.querySelectorAll(`[data-student-id="${studentId}"] .mood-cell`);
+                    moodCells.forEach(cell => {
+                        cell.textContent = (data.status !== 'absent' && data.mood_emoji) ? `${data.mood} ${data.mood_emoji}` : '-';
+                    });
 
-                        // Recalculate Teacher Dashboard aggregate stats at top bar
-                        recalculateTeacherStats();
+                    // Sparkle confetti effect on the clicked button if marked present
+                    if (data.status === 'present') {
+                        const rect = btn.getBoundingClientRect();
+                        triggerConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
                     }
+
+                    // Recalculate Dashboard aggregates
+                    recalculateTeacherStats();
                 }
             })
             .catch(err => console.error("Teacher toggle failed:", err));
         });
     });
+
+    // 1. Dashboard Roster View Switcher
+    const gridBtn = document.getElementById('view-grid-btn');
+    const listBtn = document.getElementById('view-list-btn');
+    const gridView = document.getElementById('roster-grid-view');
+    const listView = document.getElementById('roster-list-view');
+
+    function activateGridView() {
+        // Activate grid button
+        gridBtn.classList.add('active');
+        gridBtn.style.background = '#ffffff';
+        gridBtn.style.color = '#1e3a8a';
+        gridBtn.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+
+        // Deactivate list button
+        listBtn.classList.remove('active');
+        listBtn.style.background = 'transparent';
+        listBtn.style.color = '#475569';
+        listBtn.style.boxShadow = 'none';
+
+        // Show/hide views
+        if (gridView) gridView.style.display = 'grid';
+        if (listView) listView.style.display = 'none';
+
+        // Persist preference
+        localStorage.setItem('teacherDashView', 'grid');
+    }
+
+    function activateListView() {
+        // Activate list button
+        listBtn.classList.add('active');
+        listBtn.style.background = '#ffffff';
+        listBtn.style.color = '#1e3a8a';
+        listBtn.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+
+        // Deactivate grid button
+        gridBtn.classList.remove('active');
+        gridBtn.style.background = 'transparent';
+        gridBtn.style.color = '#475569';
+        gridBtn.style.boxShadow = 'none';
+
+        // Show/hide views
+        if (listView) listView.style.display = 'block';
+        if (gridView) gridView.style.display = 'none';
+
+        // Persist preference
+        localStorage.setItem('teacherDashView', 'list');
+    }
+
+    if (gridBtn && listBtn) {
+        gridBtn.addEventListener('click', activateGridView);
+        listBtn.addEventListener('click', activateListView);
+
+        // Restore last saved view preference on page load
+        const savedView = localStorage.getItem('teacherDashView');
+        if (savedView === 'list') {
+            activateListView();
+        } else {
+            activateGridView();
+        }
+    }
+
+    // 2. PIN Privacy Toggles
+    const pinToggleBtns = document.querySelectorAll('.pin-toggle-btn');
+    pinToggleBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const container = btn.parentElement;
+            if (container) {
+                const hiddenDigits = container.querySelector('.pin-digits-hidden');
+                const shownDigits = container.querySelector('.pin-digits-shown');
+                
+                if (hiddenDigits && shownDigits) {
+                    if (hiddenDigits.style.display === 'none') {
+                        hiddenDigits.style.display = 'inline';
+                        shownDigits.style.display = 'none';
+                        btn.textContent = '👁️';
+                    } else {
+                        hiddenDigits.style.display = 'none';
+                        shownDigits.style.display = 'inline';
+                        btn.textContent = '🙈';
+                    }
+                }
+            }
+        });
+    });
 }
 
 function recalculateTeacherStats() {
-    const totalStudents = document.querySelectorAll('tr[data-student-id]').length;
+    // Collect unique student IDs from both grid cards and table rows
+    const studentIdSet = new Set();
+    document.querySelectorAll('[data-student-id]').forEach(el => {
+        const sid = el.getAttribute('data-student-id');
+        if (sid) studentIdSet.add(sid);
+    });
+    const totalStudents = studentIdSet.size;
+
     let presentCount = 0;
     let lateCount = 0;
     let absentCount = 0;
 
-    document.querySelectorAll('tr[data-student-id]').forEach(row => {
-        const activeBtn = row.querySelector('.status-action-btn.active');
+    studentIdSet.forEach(sid => {
+        // Find the active status button for this student (grid or table)
+        const activeBtn = document.querySelector(`.status-action-btn.active[data-student="${sid}"]`);
         if (activeBtn) {
             const status = activeBtn.getAttribute('data-status');
             if (status === 'present') presentCount++;
@@ -653,7 +752,9 @@ function initUnifiedLogin() {
                 
                 const successMsg = document.getElementById('student-success-msg');
                 if (successMsg) {
-                    successMsg.innerHTML = `<strong>${selectedStudentName}</strong> is checked in for today!<br>Feeling: ${data.mood_emoji} ${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)}`;
+                    const statusEmoji = data.status === 'late' ? '⏰' : '☀️';
+                    const lateLabel = data.status === 'late' ? ' (Late)' : '';
+                    successMsg.innerHTML = `<strong>${selectedStudentName}</strong> is checked in${lateLabel} for today! ${statusEmoji}<br>Feeling: ${data.mood_emoji} ${selectedMood.charAt(0).toUpperCase() + selectedMood.slice(1)}`;
                 }
 
                 if (successContainer) successContainer.style.display = 'block';
@@ -677,4 +778,236 @@ function initUnifiedLogin() {
         resetStudentPIN();
     });
 }
+
+
+// --- Developer Page Controller (Drag & Drop + Gemini AI) ---
+function initDeveloperPage() {
+    const listContainer = document.getElementById('drag-drop-list');
+    const saveBtn = document.getElementById('save-layout-btn');
+    const successBanner = document.getElementById('save-success-banner');
+    
+    // Chat selectors
+    const chatInput = document.getElementById('chat-input-text');
+    const sendBtn = document.getElementById('chat-send-btn');
+    const chatMessages = document.getElementById('ai-chat-messages');
+    const apiKeyInput = document.getElementById('gemini-api-key');
+
+    if (!listContainer) return; // Not on developer page
+
+    // 1. Setup HTML5 Drag and Drop reordering
+    const draggables = document.querySelectorAll('.draggable-block-item');
+    
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', () => {
+            draggable.classList.add('dragging');
+        });
+
+        draggable.addEventListener('dragend', () => {
+            draggable.classList.remove('dragging');
+        });
+    });
+
+    listContainer.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(listContainer, e.clientY);
+        const draggable = document.querySelector('.dragging');
+        if (draggable) {
+            if (afterElement == null) {
+                listContainer.appendChild(draggable);
+            } else {
+                listContainer.insertBefore(draggable, afterElement);
+            }
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.draggable-block-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // 2. Handle switch toggles visual state updates
+    const checkboxes = document.querySelectorAll('.visibility-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const statusLabel = checkbox.parentElement.nextElementSibling;
+            if (statusLabel) {
+                if (checkbox.checked) {
+                    statusLabel.textContent = 'Visible';
+                    statusLabel.style.color = '#10b981';
+                } else {
+                    statusLabel.textContent = 'Hidden';
+                    statusLabel.style.color = '#94a3b8';
+                }
+            }
+        });
+    });
+
+    // 3. Save Layout settings on button click
+    saveBtn.addEventListener('click', () => {
+        const blocks = [];
+        document.querySelectorAll('.draggable-block-item').forEach((item, index) => {
+            blocks.push({
+                id: item.getAttribute('data-block-id'),
+                order: index + 1,
+                is_visible: item.querySelector('.visibility-checkbox').checked
+            });
+        });
+
+        saveLayoutConfiguration(blocks, () => {
+            if (successBanner) {
+                successBanner.style.display = 'block';
+                setTimeout(() => {
+                    successBanner.style.display = 'none';
+                }, 3000);
+            }
+        });
+    });
+
+    function saveLayoutConfiguration(blocks, successCallback) {
+        fetch('/teacher/developer/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: JSON.stringify({ blocks: blocks })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (successCallback) successCallback();
+            } else {
+                console.error("Save layout failure:", data.error);
+                alert("Error saving layout: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error("Fetch save layout failure:", err);
+        });
+    }
+
+    // 4. Gemini AI Chatbot Interactions
+    function scrollChatToBottom() {
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+
+    function appendMessageBubble(messageText, isUser = false) {
+        const bubble = document.createElement('div');
+        bubble.className = isUser ? 'chat-bubble user-bubble' : 'chat-bubble ai-bubble';
+        
+        if (isUser) {
+            bubble.style.cssText = 'background: #e0f2fe; border: 2px solid #bae6fd; border-radius: 18px 18px 4px 18px; padding: 0.8rem 1.2rem; max-width: 85%; align-self: flex-end; font-weight: 600; color: #0369a1; line-height: 1.5; font-size: 0.95rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02);';
+        } else {
+            bubble.style.cssText = 'background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 18px 18px 18px 4px; padding: 0.8rem 1.2rem; max-width: 85%; align-self: flex-start; font-weight: 600; color: #1e3a8a; line-height: 1.5; font-size: 0.95rem; box-shadow: 0 4px 6px rgba(0,0,0,0.02);';
+        }
+        
+        bubble.innerHTML = messageText;
+        if (chatMessages) {
+            chatMessages.appendChild(bubble);
+            scrollChatToBottom();
+        }
+        return bubble;
+    }
+
+    function sendChatMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Append User bubble
+        appendMessageBubble(text, true);
+        chatInput.value = '';
+
+        // Append typing indicator bubble
+        const typingBubble = appendMessageBubble('<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>', false);
+
+        // API Key (optional)
+        const apiKey = apiKeyInput.value.trim();
+
+        // Fetch API request to server backend parser/integrator
+        fetch('/teacher/developer/chat/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+            body: JSON.stringify({ message: text, api_key: apiKey })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Remove typing bubble
+            if (chatMessages) {
+                chatMessages.removeChild(typingBubble);
+            }
+
+            if (data.success) {
+                appendMessageBubble(data.message, false);
+                
+                // If the layout blocks list was updated in database, update the UI builder immediately
+                if (data.blocks) {
+                    reorderUIBlocks(data.blocks);
+                }
+            } else {
+                appendMessageBubble("Oh no! I ran into an issue handling that layout command: " + data.error, false);
+            }
+        })
+        .catch(err => {
+            if (chatMessages && chatMessages.contains(typingBubble)) {
+                chatMessages.removeChild(typingBubble);
+            }
+            appendMessageBubble("Oops! Something went wrong connecting to my AI processor. Check your connection or API key! 🔌", false);
+            console.error("AI chat communication error:", err);
+        });
+    }
+
+    function reorderUIBlocks(blocksList) {
+        // Rearrange builder UI cards in the left column
+        const items = [...listContainer.querySelectorAll('.draggable-block-item')];
+        
+        // Sort items array based on blocksList order
+        blocksList.forEach(blockData => {
+            const blockItem = items.find(item => item.getAttribute('data-block-id') === blockData.block_id);
+            if (blockItem) {
+                // Update checkbox visibility state
+                const cb = blockItem.querySelector('.visibility-checkbox');
+                if (cb) {
+                    cb.checked = blockData.is_visible;
+                    // Trigger change event to update label color
+                    cb.dispatchEvent(new Event('change'));
+                }
+                
+                // Append to container (reorders them dynamically to match sorted list)
+                listContainer.appendChild(blockItem);
+                
+                // Add a cute highlight blink animation
+                blockItem.style.transition = 'none';
+                blockItem.style.backgroundColor = '#ecfdf5';
+                blockItem.style.borderColor = '#34d399';
+                setTimeout(() => {
+                    blockItem.style.transition = 'all 0.4s';
+                    blockItem.style.backgroundColor = '#f8fafc';
+                    blockItem.style.borderColor = '#e2e8f0';
+                }, 800);
+            }
+        });
+    }
+
+    sendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            sendChatMessage();
+        }
+    });
+}
+
 

@@ -1,8 +1,9 @@
+import json
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
-from .models import Student, ClassroomOption, AvatarEmoji, AvatarColor
+from .models import Student, ClassroomOption, AvatarEmoji, AvatarColor, AppLayoutBlock
 
 class StudentPINCodeTests(TestCase):
     def setUp(self):
@@ -178,4 +179,97 @@ class TeacherAuthenticationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('students', response.context)
         self.assertIn('classrooms', response.context)
+
+
+class DeveloperCustomizerTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        # Normal staff user
+        self.staff_user = User.objects.create_user(
+            username='admin_test',
+            email='admin@school.com',
+            password='adminpassword123',
+            is_staff=True,
+            is_superuser=True
+        )
+        # Regular teacher user (non-staff)
+        self.regular_user = User.objects.create_user(
+            username='teacher_non_admin',
+            email='teacher@school.com',
+            password='password123'
+        )
+
+    def test_developer_page_unauthenticated_redirect(self):
+        url = reverse('admin_developer_page')
+        response = self.client.get(url)
+        self.assertRedirects(response, reverse('teacher_login') + f"?next={url}")
+
+    def test_developer_page_non_staff_denied(self):
+        self.client.login(username='teacher_non_admin', password='password123')
+        url = reverse('admin_developer_page')
+        response = self.client.get(url)
+        # Standard redirect back to dashboard on messages error
+        self.assertRedirects(response, reverse('teacher_dashboard'))
+
+    def test_developer_page_staff_success(self):
+        self.client.login(username='admin_test', password='adminpassword123')
+        url = reverse('admin_developer_page')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('layout_blocks', response.context)
+        # Should have seeded 4 blocks
+        self.assertEqual(len(response.context['layout_blocks']), 4)
+
+    def test_save_layout_api(self):
+        self.client.login(username='admin_test', password='adminpassword123')
+        # Seed blocks first by loading page
+        self.client.get(reverse('admin_developer_page'))
+        
+        # Post new layout
+        url = reverse('save_layout')
+        payload = {
+            'blocks': [
+                {'id': 'stats_banner', 'order': 1, 'is_visible': False},
+                {'id': 'header', 'order': 2, 'is_visible': True},
+                {'id': 'classroom_tabs', 'order': 3, 'is_visible': True},
+                {'id': 'student_grid', 'order': 4, 'is_visible': True}
+            ]
+        }
+        response = self.client.post(
+            url, 
+            data=json.dumps(payload), 
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Verify database
+        block = AppLayoutBlock.objects.get(block_id='stats_banner')
+        self.assertEqual(block.order, 1)
+        self.assertFalse(block.is_visible)
+
+    def test_ai_chat_command_fallback(self):
+        self.client.login(username='admin_test', password='adminpassword123')
+        # Seed blocks first
+        self.client.get(reverse('admin_developer_page'))
+        
+        url = reverse('ai_chat_command')
+        payload = {
+            'message': 'hide stats banner',
+            'api_key': '' # No API key, forces fallback offline parsing
+        }
+        response = self.client.post(
+            url, 
+            data=json.dumps(payload), 
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        res_json = response.json()
+        self.assertTrue(res_json['success'])
+        self.assertEqual(res_json['action'], 'hide')
+        self.assertEqual(res_json['block'], 'stats_banner')
+        
+        # Verify stats banner hidden in DB
+        self.assertFalse(AppLayoutBlock.objects.get(block_id='stats_banner').is_visible)
+
 

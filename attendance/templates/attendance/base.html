@@ -22,6 +22,46 @@
     <!-- Confetti layer for celebrations -->
     <canvas id="confetti-canvas"></canvas>
 
+    <!-- Top One-Liner Ticker Bar -->
+    <div class="top-ticker-bar">
+        <div class="ticker-marquee-track">
+            <div class="ticker-marquee-list">
+                <!-- First copy of content -->
+                <div class="ticker-item">
+                    <span class="ticker-badge {{ schedule_status.badge }}">⏰ {{ schedule_status.status }}</span>
+                    <span class="ticker-text">{{ schedule_status.message }}</span>
+                    <span class="ticker-divider">|</span>
+                    <span class="ticker-time">🕒 {{ schedule_status.current_time_str }}</span>
+                    <span class="ticker-divider">|</span>
+                    <span class="ticker-timeline">
+                        {% for m in schedule_status.milestones %}
+                            <span class="ticker-step {{ m.status_class }}">
+                                {{ m.label }} ({{ m.time_str }})
+                            </span>
+                            {% if not forloop.last %} • {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+                <!-- Second copy of content for seamless loop -->
+                <div class="ticker-item" aria-hidden="true">
+                    <span class="ticker-badge {{ schedule_status.badge }}">⏰ {{ schedule_status.status }}</span>
+                    <span class="ticker-text">{{ schedule_status.message }}</span>
+                    <span class="ticker-divider">|</span>
+                    <span class="ticker-time">🕒 {{ schedule_status.current_time_str }}</span>
+                    <span class="ticker-divider">|</span>
+                    <span class="ticker-timeline">
+                        {% for m in schedule_status.milestones %}
+                            <span class="ticker-step {{ m.status_class }}">
+                                {{ m.label }} ({{ m.time_str }})
+                            </span>
+                            {% if not forloop.last %} • {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="sky-background">
         <!-- Floating cartoon clouds -->
         <div class="cloud cloud-1"></div>
@@ -29,12 +69,31 @@
         <div class="cloud cloud-3"></div>
         
         <div class="main-wrapper">
+            <!-- Playful Navigation Bar -->
+            <header class="playful-navbar">
+                <a href="{% url 'home' %}" class="navbar-brand">
+                    <span class="brand-emoji">🏫</span>
+                    <span class="brand-text">FocusFlow</span>
+                </a>
+                <nav class="navbar-links">
+                    <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        🏠 Home
+                    </a>
+                    <a href="{% url 'student_grid' %}" class="nav-link {% if request.resolver_match.url_name == 'student_grid' %}active{% endif %}">
+                        🎒 Kids Area
+                    </a>
+                    <a href="{% url 'teacher_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'teacher_dashboard' or request.resolver_match.url_name == 'teacher_login' or request.resolver_match.url_name == 'teacher_register' or request.resolver_match.url_name == 'admin_developer_page' or request.resolver_match.url_name == 'add_student' or request.resolver_match.url_name == 'edit_student' or request.resolver_match.url_name == 'delete_student' %}active{% endif %}">
+                        🔑 Teacher Portal
+                    </a>
+                </nav>
+            </header>
+
             {% block content %}
             {% endblock %}
         </div>
     </div>
 
     <!-- Kid Attendance Script -->
-    <script src="{% static 'js/kid_attendance.js' %}"></script>
+    <script src="{% static 'js/kid_attendance.js' %}?v={% now 'U' %}"></script>
 </body>
 </html>

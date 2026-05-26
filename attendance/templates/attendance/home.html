@@ -1,0 +1,40 @@
+{% extends 'attendance/base.html' %}
+{% load static %}
+
+{% block title %}Welcome | Kindergarten Attendance{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; gap: 2rem;">
+    <div class="school-logo-bubble">
+        <span class="logo-emoji">🏫</span>
+        <h1>Welcome to Kindergarten App</h1>
+        <p>Where do you want to go today?</p>
+    </div>
+
+    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; max-width: 800px;">
+        <!-- Student Grid Route -->
+        <a href="{% url 'student_grid' %}" style="text-decoration: none;">
+            <div class="kid-card present" style="width: 250px; text-align: center; cursor: pointer; transition: transform 0.2s;">
+                <div class="avatar-circle" style="background-color: #FDFFB6; margin: 0 auto 1rem auto; width: 80px; height: 80px; font-size: 2.5rem;">🎒</div>
+                <h2 style="margin: 0; color: #1e3a8a;">Kids Area</h2>
+                <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">Check in and share your mood!</p>
+            </div>
+        </a>
+
+        <!-- Teacher Portal Route -->
+        <a href="{% url 'teacher_dashboard' %}" style="text-decoration: none;">
+            <div class="kid-card present" style="width: 250px; text-align: center; cursor: pointer; transition: transform 0.2s; border-color: #3b82f6;">
+                <div class="avatar-circle" style="background-color: #bfdbfe; margin: 0 auto 1rem auto; width: 80px; height: 80px; font-size: 2.5rem;">🔑</div>
+                <h2 style="margin: 0; color: #1e3a8a;">Teacher Portal</h2>
+                <p style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">Manage classrooms and attendance</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<style>
+    .kid-card:hover {
+        transform: translateY(-8px);
+    }
+</style>
+{% endblock %}

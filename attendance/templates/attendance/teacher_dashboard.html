@@ -4,6 +4,7 @@
 {% block title %}Teacher Admin Portal | Kindergarten Attendance{% endblock %}
 
 {% block content %}
+
 <div class="teacher-dashboard-container">
     <!-- Nav Header -->
     <div class="grid-header">
@@ -14,8 +15,11 @@
         </div>
         
         <div class="admin-nav-buttons">
+            <a href="{% url 'admin_developer_page' %}" class="bubbly-btn secondary-btn dev-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-color: #8b5cf6; box-shadow: 0 6px 0 #5b21b6;">
+                🛠️ Developer Area
+            </a>
             <a href="{% url 'student_grid' %}" class="bubbly-btn primary-btn" style="background: var(--primary-gradient)">
-                🏠 Kids Check-in Screen
+                🏠 Kids Grid Screen
             </a>
             <a href="{% url 'add_student' %}" class="bubbly-btn secondary-btn add-btn">
                 ➕ Add Student
@@ -40,7 +44,7 @@
         </div>
     {% endif %}
 
-    <!-- Classroom Filter selector -->
+    <!-- Classroom Filter selector & Stats -->
     <div class="teacher-control-bar">
         <form method="GET" class="filter-form">
             <label for="class-filter">Classroom Filter:</label>
@@ -71,8 +75,104 @@
         </div>
     </div>
 
-    <!-- Student Attendance List Table -->
-    <div class="table-card">
+    <!-- Layout Toggle Pill Tab -->
+    <div class="dashboard-view-switcher" style="display: flex; gap: 0.35rem; background: #e2e8f0; padding: 0.35rem; border-radius: 20px; width: fit-content; margin-bottom: 2rem; border: 2px solid #cbd5e1; position: relative;">
+        <button class="view-switch-btn active" id="view-grid-btn" style="border: none; background: #ffffff; padding: 0.6rem 1.25rem; border-radius: 16px; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 0.95rem; color: #1e3a8a; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            🗂️ Grid Roster
+        </button>
+        <button class="view-switch-btn" id="view-list-btn" style="border: none; background: transparent; padding: 0.6rem 1.25rem; border-radius: 16px; font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 0.95rem; color: #475569; cursor: pointer; transition: all 0.3s;">
+            📋 Table List
+        </button>
+    </div>
+
+    <!-- VIEW 1: MODERN GRID VIEW -->
+    <div class="dashboard-grid-view" id="roster-grid-view" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        {% for student in students %}
+            <div class="teacher-student-card" data-student-id="{{ student.id }}" style="background: #ffffff; border: 3px solid {{ student.avatar_color }}; border-radius: 28px; padding: 1.5rem; box-shadow: var(--card-shadow); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s;">
+                
+                <!-- Card Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="table-avatar" style="background-color: {{ student.avatar_color }}; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: 3px solid #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                            {{ student.avatar_emoji }}
+                        </div>
+                        <div>
+                            <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin: 0; font-size: 1.15rem;">{{ student.full_name }}</h3>
+                            <span class="table-classroom-badge" style="margin-top: 0.2rem; display: inline-block;">{{ student.classroom }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Menu -->
+                    <div style="display: flex; gap: 0.35rem;">
+                        <a href="{% url 'edit_student' student.id %}" class="action-btn edit" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; background: #ffffff; text-decoration: none;" title="Edit Student">✏️</a>
+                        <a href="{% url 'delete_student' student.id %}" class="action-btn delete" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; background: #ffffff; text-decoration: none;" title="Delete Student">🗑️</a>
+                    </div>
+                </div>
+                
+                <!-- Card Middle: PIN and Status information -->
+                <div style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- PIN Toggle -->
+                    <div class="pin-privacy-toggle" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 2px solid #f1f5f9; border-radius: 14px; padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #475569;">
+                        <span style="font-family: 'Fredoka', sans-serif; font-size: 0.85rem; color: #94a3b8; font-weight: 700;">PIN CODE:</span>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span class="pin-digits-hidden">••••</span>
+                            <span class="pin-digits-shown" style="display: none; background: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 6px; color: #1e3a8a;">{{ student.pin_code }}</span>
+                            <button class="pin-toggle-btn" style="border: none; background: transparent; cursor: pointer; font-size: 1.1rem; padding: 0;" title="Show/Hide PIN">👁️</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Today Check-in status display -->
+                    <div style="background: #f8fafc; border: 2px solid #f1f5f9; border-radius: 14px; padding: 0.5rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #94a3b8; font-weight: 700;">Check-in:</span>
+                            <strong class="checked-time-cell" style="color: #475569;">
+                                {% if student.today_status and student.today_status.status != 'absent' %}
+                                    {{ student.today_status.checked_in_at|date:"g:i A" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #94a3b8; font-weight: 700;">Mood:</span>
+                            <strong class="mood-cell" style="color: #475569;">
+                                {% if student.today_status and student.today_status.mood %}
+                                    {{ student.today_status.get_mood_display }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Footer: Status controls -->
+                <div class="attendance-action-pills" style="display: flex; width: 100%; gap: 0.35rem;">
+                    <button class="status-action-btn present-btn {% if student.today_status and student.today_status.status == 'present' %}active{% endif %}" 
+                            data-status="present" data-student="{{ student.id }}" style="flex: 1; padding: 0.5rem 0.2rem; font-size: 0.8rem; font-weight: 700;">
+                        Present ☀️
+                    </button>
+                    <button class="status-action-btn late-btn {% if student.today_status and student.today_status.status == 'late' %}active{% endif %}" 
+                            data-status="late" data-student="{{ student.id }}" style="flex: 1; padding: 0.5rem 0.2rem; font-size: 0.8rem; font-weight: 700;">
+                        Late ⏰
+                    </button>
+                    <button class="status-action-btn absent-btn {% if not student.today_status or student.today_status.status == 'absent' %}active{% endif %}" 
+                            data-status="absent" data-student="{{ student.id }}" style="flex: 1; padding: 0.5rem 0.2rem; font-size: 0.8rem; font-weight: 700;">
+                        Absent 🌙
+                    </button>
+                </div>
+                
+            </div>
+        {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; background: #ffffff; border: 3px dashed #cbd5e1; border-radius: 28px;">
+                <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a;">No Students Found 🐣</h3>
+                <p style="font-weight: 600; color: #94a3b8;">Click "Add Student" above to populate the school roster.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- VIEW 2: STANDARD LIST TABLE VIEW -->
+    <div class="table-card" id="roster-list-view" style="display: none; transition: all 0.3s ease;">
         <table class="kids-admin-table">
             <thead>
                 <tr>
@@ -82,7 +182,15 @@
                     <th>PIN</th>
                     <th>Today's Attendance Status</th>
                     <th>Checked In At</th>
-                    <th>Morning Mood</th>
+                    <th>
+                        {% if current_time_period == 'morning' %}
+                            Morning Mood
+                        {% elif current_time_period == 'afternoon' %}
+                            Afternoon Mood
+                        {% else %}
+                            Evening Mood
+                        {% endif %}
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -101,9 +209,11 @@
                             <span class="table-classroom-badge">{{ student.classroom }}</span>
                         </td>
                         <td>
-                            <span style="font-family: monospace; font-size: 1.1rem; background-color: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; color: #475569;">
-                                {{ student.pin_code }}
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <span class="pin-digits-hidden">••••</span>
+                                <span class="pin-digits-shown" style="display: none;">{{ student.pin_code }}</span>
+                                <button class="pin-toggle-btn" style="border: none; background: transparent; cursor: pointer; font-size: 1rem; padding: 0;">👁️</button>
+                            </div>
                         </td>
                         <td>
                             <!-- Teacher Quick Attendance Actions -->
@@ -147,7 +257,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="table-empty-state">
+                        <td colspan="8" class="table-empty-state" style="text-align: center; padding: 2rem; font-weight: 700; color: #94a3b8;">
                             No students registered. Click "Add Student" above to populate the school!
                         </td>
                     </tr>

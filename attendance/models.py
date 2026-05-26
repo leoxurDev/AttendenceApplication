@@ -142,3 +142,16 @@ class Attendance(models.Model):
         """Get mood choices appropriate for a specific time period."""
         return [mood for mood in cls.MOOD_CHOICES]
 
+
+class AppLayoutBlock(models.Model):
+    block_id = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=100)
+    order = models.PositiveIntegerField(default=0)
+    is_visible = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.title} (order: {self.order}, visible: {self.is_visible})"
+
