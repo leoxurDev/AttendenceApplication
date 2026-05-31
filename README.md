@@ -201,5 +201,5 @@ Your FocusFlow Kindergarten app is now live and containerized!
 
 The following image represents the visual layout hierarchy and block structure of our student check-in portal:
 
-![Architecture Layout Diagram](file:///Users/hariprasathm/VirtualBox%20VMs/KindergartenApp/static/images/architecture.png)
+![Architecture Layout Diagram](https://github.com/leoxurDev/AttendenceApplication/blob/main/static/images/architecture.png)
 
