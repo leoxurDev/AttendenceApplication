@@ -1,0 +1,94 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IT Tech Services by Leoxur Inc.{% endblock %}</title>
+    <!-- ServiceNow Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/servicenow_theme.css' %}">
+</head>
+<body class="servicenow-portal">
+
+    <!-- Top ServiceNow Navigation Bar -->
+    <header class="snow-header">
+        <a href="{% url 'engineer_dashboard' %}" class="snow-logo">
+            <span>💻</span> IT Tech Services <span class="badge" style="background-color: #d97706;">Leoxur Inc.</span>
+        </a>
+        <div class="snow-user-nav">
+            {% if active_engineer %}
+                <span style="color: #10b981; font-weight: 600;">👤 Active: {{ active_engineer.name }}</span>
+            {% else %}
+                <span style="color: #f59e0b; font-weight: 500;">👤 Simulated System User</span>
+            {% endif %}
+            <span style="color: #475569;">|</span>
+            <a href="{% url 'home' %}" style="font-weight: 500;">🏫 Exit to School Home</a>
+        </div>
+    </header>
+
+    <div class="snow-wrapper">
+        <!-- Left Navigation Sidebar -->
+        <aside class="snow-sidebar">
+            <ul class="snow-sidebar-menu">
+                <li class="snow-sidebar-section">Incident Management</li>
+                <li class="snow-sidebar-item {% if request.resolver_match.url_name == 'engineer_dashboard' %}active{% endif %}">
+                    <a href="{% url 'engineer_dashboard' %}">📂 Active Tickets</a>
+                </li>
+
+                <li class="snow-sidebar-section">User Administration</li>
+                <li class="snow-sidebar-item {% if request.resolver_match.url_name == 'engineer_list' or request.resolver_match.url_name == 'engineer_create' or request.resolver_match.url_name == 'engineer_edit' %}active{% endif %}">
+                    <a href="{% url 'engineer_list' %}">👷 Support Engineers</a>
+                </li>
+                <li class="snow-sidebar-item {% if request.resolver_match.url_name == 'identity_manager' %}active{% endif %}">
+                    <a href="{% url 'identity_manager' %}">🔐 Identity Manager</a>
+                </li>
+
+                <li class="snow-sidebar-section">Support Setup</li>
+                <li class="snow-sidebar-item {% if request.resolver_match.url_name == 'group_list' or request.resolver_match.url_name == 'group_create' or request.resolver_match.url_name == 'group_edit' %}active{% endif %}">
+                    <a href="{% url 'group_list' %}">👥 Assignment Groups</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Workspace -->
+        <main class="snow-content">
+            <!-- Simulated Identity Banner for testing permissions and name attributes in SQLite -->
+            <div class="simulation-banner">
+                <div>
+                    <strong>⚙️ Simulation Control:</strong> You are acting as: 
+                    {% if active_engineer %}
+                        <u>{{ active_engineer.name }}</u> ({{ active_engineer.groups.all|join:", "|default:"No Group" }})
+                    {% else %}
+                        <u>Administrator / System Seeder</u>
+                    {% endif %}
+                </div>
+                <form method="POST" action="{% url 'engineer_dashboard' %}">
+                    {% csrf_token %}
+                    <label for="set_engineer_id">Simulate Engineer:</label>
+                    <select name="set_engineer_id" onchange="this.form.submit()">
+                        <option value="">-- Admin System User --</option>
+                        {% for eng in engineers_all %}
+                            <option value="{{ eng.pk }}" {% if active_engineer.pk == eng.pk %}selected{% endif %}>
+                                {{ eng.name }} [{{ eng.groups.all|join:", "|default:"L2/L3/L4" }}]
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <!-- Django Alert Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="snow-alert {% if message.tags == 'success' %}snow-alert-success{% else %}snow-alert-error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block portal_content %}
+            {% endblock %}
+        </main>
+    </div>
+
+</body>
+</html>

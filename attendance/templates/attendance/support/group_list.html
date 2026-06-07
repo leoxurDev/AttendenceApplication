@@ -1,0 +1,46 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Assignment Groups | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <h1>Assignment Groups</h1>
+    <a href="{% url 'group_create' %}" class="snow-btn snow-btn-primary">➕ Add Group</a>
+</div>
+
+<div class="snow-table-container">
+    {% if groups %}
+        <table class="snow-table">
+            <thead>
+                <tr>
+                    <th style="width: 200px;">Group Name</th>
+                    <th>Description</th>
+                    <th style="width: 180px;">Created</th>
+                    <th style="width: 150px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in groups %}
+                    <tr>
+                        <td style="font-weight: bold; color: #1e293b;">{{ group.name }}</td>
+                        <td>{{ group.description|default:"(No description available)" }}</td>
+                        <td>{{ group.created_at|date:"Y-m-d H:i A" }}</td>
+                        <td style="text-align: center;">
+                            <div style="display: inline-flex; gap: 0.5rem;">
+                                <a href="{% url 'group_edit' group.pk %}" class="snow-btn snow-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Edit</a>
+                                <a href="{% url 'group_delete' group.pk %}" class="snow-btn snow-btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: var(--snow-secondary-text);">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">👥</span>
+            <h3>No assignment groups defined yet.</h3>
+            <p>Seeding will occur automatically when loading the dashboard, or click "Add Group" above.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

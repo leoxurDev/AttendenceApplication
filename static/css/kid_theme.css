@@ -1668,3 +1668,192 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* ==========================================
+   🌙 Dark Theme Override Styles
+   ========================================== */
+body.dark-theme {
+    background-color: #0f172a !important;
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+body.dark-theme .sky-background {
+    background-color: #0f172a !important;
+    background: #0f172a !important;
+}
+
+body.dark-theme .sky-background .cloud {
+    background: #334155 !important;
+    opacity: 0.25 !important;
+}
+body.dark-theme .sky-background .cloud::before,
+body.dark-theme .sky-background .cloud::after {
+    background: #334155 !important;
+}
+
+/* Base card dark backgrounds override */
+body.dark-theme .kid-card,
+body.dark-theme .table-card,
+body.dark-theme .school-logo-bubble,
+body.dark-theme .stats-cloud-banner,
+body.dark-theme .teacher-control-bar,
+body.dark-theme .teacher-student-card,
+body.dark-theme .pin-privacy-toggle,
+body.dark-theme .teacher-student-card div,
+body.dark-theme .kid-modal-card,
+body.dark-theme .developer-page-container .kid-card,
+body.dark-theme .sidebar-ticket-item,
+body.dark-theme .ticket-grid-item,
+body.dark-theme .dev-card,
+body.dark-theme .permissions-card,
+body.dark-theme .ai-assistant-card,
+body.dark-theme .builder-card {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+/* Sub-containers inside cards */
+body.dark-theme .draggable-block-item,
+body.dark-theme .api-key-container,
+body.dark-theme #ai-chat-messages,
+body.dark-theme .drag-list-container div {
+    background-color: #334155 !important;
+    background: #334155 !important;
+    border-color: #475569 !important;
+    color: #f8fafc !important;
+}
+
+/* Chat bubble styling */
+body.dark-theme .chat-bubble.ai-bubble {
+    background-color: #1e3a8a !important;
+    background: #1e3a8a !important;
+    border-color: #3b82f6 !important;
+    color: #dbeafe !important;
+}
+
+/* Message / Alert boxes styled properly to override base white-on-white text */
+body.dark-theme .message-alert {
+    background-color: #1e3a8a !important;
+    background: #1e3a8a !important;
+    border-color: #3b82f6 !important;
+    color: #dbeafe !important;
+}
+body.dark-theme .message-alert.success {
+    background-color: #064e3b !important;
+    background: #064e3b !important;
+    border-color: #10b981 !important;
+    color: #d1fae5 !important;
+}
+body.dark-theme .message-alert.error,
+body.dark-theme .message-alert.danger,
+body.dark-theme .message-alert.warning {
+    background-color: #7f1d1d !important;
+    background: #7f1d1d !important;
+    border-color: #ef4444 !important;
+    color: #fecaca !important;
+}
+
+/* Text elements color inheritance reset */
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6,
+body.dark-theme p,
+body.dark-theme span,
+body.dark-theme label,
+body.dark-theme strong,
+body.dark-theme td,
+body.dark-theme th {
+    color: #f8fafc !important;
+}
+
+/* Reset specific badge style color overrides if text is inside custom styled spans */
+body.dark-theme .message-alert.success,
+body.dark-theme .message-alert.success * {
+    color: #d1fae5 !important;
+}
+body.dark-theme .message-alert.error,
+body.dark-theme .message-alert.error *,
+body.dark-theme .message-alert.warning,
+body.dark-theme .message-alert.warning * {
+    color: #fecaca !important;
+}
+
+/* Icons and Emojis background removal (Only display icon, transparent background) */
+body.dark-theme .avatar-circle,
+body.dark-theme .kid-avatar-wrapper,
+body.dark-theme .table-avatar {
+    background-color: transparent !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Tables configuration in dark mode */
+body.dark-theme .kids-admin-table,
+body.dark-theme table {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+body.dark-theme .kids-admin-table th,
+body.dark-theme table th {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+body.dark-theme .kids-admin-table tr,
+body.dark-theme table tr {
+    border-bottom: 1.5px solid #334155 !important;
+}
+
+body.dark-theme .kids-admin-table tr:hover,
+body.dark-theme table tr:hover {
+    background-color: #334155 !important;
+}
+
+/* Form controls in dark mode */
+body.dark-theme input,
+body.dark-theme select,
+body.dark-theme textarea {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+body.dark-theme .playful-navbar {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: #475569 !important;
+}
+
+body.dark-theme .playful-navbar .nav-link {
+    color: #cbd5e1 !important;
+}
+
+body.dark-theme .playful-navbar .nav-link.active {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+body.dark-theme .top-ticker-bar {
+    background: #0f172a !important;
+    border-bottom-color: #334155 !important;
+}
+
+body.dark-theme .mini-stat-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+body.dark-theme .mini-stat-card .value {
+    color: #ffffff !important;
+}
+
+

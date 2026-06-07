@@ -79,6 +79,37 @@ Here is a comprehensive breakdown of each directory and file in the codebase, ex
 * **[`static/js/kid_attendance.js`](file:///Users/hariprasathm/VirtualBox%20VMs/KindergartenApp/static/js/kid_attendance.js)**
   * Implements dynamic frontend components, HTML5 drag-and-drop lists, and Starburst particles physics canvas for checking in.
 
+
+---
+
+## 🛠️ Tech Support & IT Tech Services Portal
+
+The application includes a dual-themed IT support and incident tracking system:
+
+### 1. Client-Facing Support Desk (Kindergarten Theme)
+- **Roster & Sidebar Integration**: Teachers logged in with the necessary permission will see a green **"🛠️ Tech Support"** button in their portal header next to the purple Developer Area button. Additionally, their main dashboard layout will show a side panel listing all active support ticket numbers and their statuses.
+- **Support Home**: Accessible at `/support/` (wrapped in permission check). It provides a kid-themed interface for submitting new support tickets (with subject, description, priority) and tracking status. The bottom of the page displays a grid list of all logged incident tickets in the FocusFlow theme.
+- **Incident Details**: Accessible at `/support/ticket/<ticket_number>/`. Shows the caller name, assignment details, and public message thread (Internal Work Notes are strictly hidden here).
+
+### 2. IT Tech Services Portal (ServiceNow theme)
+- **Dedicated Login**: Support engineers must log in using their email and password at `/support/engineer/login/`.
+- **Workload Dashboard**: Located at `/support/engineer/` (wrapped in engineer authentication). Mimics a ServiceNow console with dark-slate grids showing metrics (active, breached, unassigned SLAs) and an engineer workload checklist.
+- **Incident Management**: Support engineers can edit ticket details, assign tickets to other engineers, transition ticket states (New, In Progress, On Hold, Resolved, Closed), and post either public **Customer Comments** or internal-only **Work Notes** (highlighted in gold with a padlock).
+- **Service Level Agreements (SLAs)**: Automatic SLA timers run depending on the incident priority:
+  - Critical: 1 hour
+  - High: 4 hours
+  - Moderate: 8 hours
+  - Low: 24 hours
+- **Administrative Permission Toggle**: Administrators (staff/superusers) can control which teachers have permission to access the support portals by toggling the `TeacherSupportPermission` in the **Developer Area**.
+- **Identity & Access Manager**: Located at `/support/engineer/identity/` (wrapped in engineer login protection), this ServiceNow-themed page serves as a unified manager for permission mapping:
+  - **Teacher & Staff Permissions**: Allows toggling ticket-raising permissions (`TeacherSupportPermission`) and promoting/demoting Django `is_staff` role for any user.
+  - **Support Engineer Groups Mapping**: Provides checkbox checklist mapping for engineers to easily associate them with multiple assignment groups (L2, L3, L4, etc.).
+
+### 3. Universal Light/Dark Theme Toggle
+- **Toggle Control**: Located at the end of the main navigation navbar, represented by dynamic emojis (`🌙` for light theme, `☀️` for dark theme).
+- **Client-Side Persistence**: Stores preference in the browser's `localStorage` and injects theme classes pre-render to eliminate any visual flickering.
+- **Dark Mode Styling**: Overrides backgrounds (`#0f172a`), card containers (`#1e293b`), tables, and form fields. Strips icon/avatar background wrappers to keep clean isolated emojis. Corrects message/error alert containers to be highly readable on dark backgrounds (light red text on dark red background for errors, light green text on dark green background for success).
+
 ---
 
 ## 🛠️ How to Update and Make Code Changes

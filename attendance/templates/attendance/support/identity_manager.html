@@ -1,0 +1,143 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Identity & Access Manager | IT Tech Services{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header" style="margin-bottom: 2rem;">
+    <div>
+        <h1 style="margin: 0; font-size: 1.75rem; font-family: sans-serif; font-weight: 600; color: var(--snow-text-primary);">Identity & Access Manager</h1>
+        <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #64748b;">Manage user application privileges and support engineer group mappings.</p>
+    </div>
+</div>
+
+<div style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;">
+    <!-- LEFT SIDE: TEACHER & ADMIN PRIVILEGES -->
+    <div style="flex: 1.2; min-width: 450px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+        <div style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 1.1rem; color: #1e293b; font-family: sans-serif; font-weight: 600;">🔐 Teacher & Staff Permissions</h2>
+            <span class="snow-badge badge-state-new" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">User Permissions</span>
+        </div>
+        
+        <div style="padding: 1.25rem;">
+            <table class="snow-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #cbd5e1;">
+                        <th style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; color: #475569;">User</th>
+                        <th style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; color: #475569;">Role</th>
+                        <th style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; color: #475569; text-align: center;">Can Raise Tickets</th>
+                        <th style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; color: #475569; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for up in user_perms %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <strong style="color: #0f172a;">{{ up.user.username }}</strong>
+                                <div style="font-size: 0.75rem; color: #64748b;">{{ up.user.email|default:"no email configured" }}</div>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem;">
+                                {% if up.user.is_superuser %}
+                                    <span class="snow-badge badge-critical" style="font-size: 0.7rem;">Superuser</span>
+                                {% elif up.user.is_staff %}
+                                    <span class="snow-badge badge-high" style="font-size: 0.7rem;">Staff / Admin</span>
+                                {% else %}
+                                    <span class="snow-badge badge-low" style="font-size: 0.7rem;">Teacher</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; text-align: center;">
+                                {% if up.can_raise %}
+                                    <span class="snow-badge badge-moderate" style="font-size: 0.75rem; font-weight: 700;">🟢 Permitted</span>
+                                {% else %}
+                                    <span class="snow-badge" style="font-size: 0.75rem; font-weight: 700; background-color: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1;">🔒 Restricted</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; text-align: center;">
+                                <div style="display: flex; gap: 0.35rem; justify-content: center;">
+                                    <!-- Toggle Support Permission Form -->
+                                    <form method="POST" action="{% url 'identity_manager' %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_teacher_permission">
+                                        <input type="hidden" name="user_id" value="{{ up.user.pk }}">
+                                        <button type="submit" class="snow-btn {% if up.can_raise %}snow-btn-secondary{% else %}snow-btn-primary{% endif %}" 
+                                                style="padding: 0.35rem 0.65rem; font-size: 0.75rem; border-radius: 4px; font-weight: 600;"
+                                                {% if up.user.is_superuser %}disabled title="Superusers always have support ticket access" style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                                            Toggle Permission
+                                        </button>
+                                    </form>
+
+                                    <!-- Toggle Staff/Admin Role Form -->
+                                    <form method="POST" action="{% url 'identity_manager' %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_staff_status">
+                                        <input type="hidden" name="user_id" value="{{ up.user.pk }}">
+                                        <button type="submit" class="snow-btn snow-btn-secondary" 
+                                                style="padding: 0.35rem 0.65rem; font-size: 0.75rem; border-radius: 4px;"
+                                                {% if up.user.is_superuser %}disabled title="Superuser status cannot be toggled here" style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                                            {% if up.user.is_staff %}Demote{% else %}Promote Staff{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: SUPPORT ENGINEER GROUPS MAPPING -->
+    <div style="flex: 1; min-width: 380px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+        <div style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 1.1rem; color: #1e293b; font-family: sans-serif; font-weight: 600;">👥 Support Engineer Groups</h2>
+            <span class="snow-badge badge-high" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">Group Membership</span>
+        </div>
+        
+        <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for eng in engineers %}
+                <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong style="font-size: 1rem; color: #1e293b;">{{ eng.name }}</strong>
+                            <div style="font-size: 0.75rem; color: #64748b;">{{ eng.email }}</div>
+                        </div>
+                        {% if eng.is_active %}
+                            <span class="snow-badge badge-moderate" style="font-size: 0.7rem;">Active Engineer</span>
+                        {% else %}
+                            <span class="snow-badge badge-low" style="font-size: 0.7rem;">Inactive</span>
+                        {% endif %}
+                    </div>
+
+                    <form method="POST" action="{% url 'identity_manager' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_engineer_groups">
+                        <input type="hidden" name="engineer_id" value="{{ eng.pk }}">
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-size: 0.8rem; font-weight: bold; color: #475569; margin-bottom: 0.5rem; text-transform: uppercase;">Assigned Groups:</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+                                {% for group in groups %}
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #334155; cursor: pointer;">
+                                        <input type="checkbox" name="groups" value="{{ group.pk }}" 
+                                               {% if group in eng.groups.all %}checked{% endif %}
+                                               style="width: 15px; height: 15px; cursor: pointer;">
+                                        <span>{{ group.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="snow-btn snow-btn-primary" style="width: 100%; padding: 0.45rem; font-size: 0.8rem; font-weight: bold; border-radius: 4px;">
+                            💾 Save Assignments
+                        </button>
+                    </form>
+                </div>
+            {% empty %}
+                <div style="padding: 2rem; text-align: center; color: #64748b;">
+                    <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">👷</span>
+                    <p style="margin: 0; font-size: 0.9rem;">No support engineers configured in the system.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Delete Engineer | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="{% url 'engineer_list' %}" class="snow-btn snow-btn-secondary">⬅️ Back</a>
+        <h1>Confirm Deletion</h1>
+    </div>
+</div>
+
+<div class="snow-form-card" style="max-width: 500px; margin: 2rem auto; text-align: center; border-top: 4px solid #ef4444;">
+    <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">⚠️</span>
+    <h3 style="margin-top: 0; color: #ef4444;">Delete Support Engineer?</h3>
+    <p>Are you sure you want to delete engineer <b>{{ engineer.name }}</b>?</p>
+    <p style="color: var(--snow-secondary-text); font-size: 0.85rem; margin-bottom: 1.5rem;">This will unassign any active incidents currently assigned to this engineer, but will not delete the incidents themselves.</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <a href="{% url 'engineer_list' %}" class="snow-btn snow-btn-secondary">Cancel</a>
+            <button type="submit" class="snow-btn snow-btn-danger">Delete Engineer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

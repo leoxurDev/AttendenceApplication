@@ -1,0 +1,113 @@
+{% extends 'attendance/base.html' %}
+{% load static %}
+
+{% block title %}Ticket {{ ticket.number }} | Kindergarten App{% endblock %}
+
+{% block content %}
+<div class="developer-page-container" style="max-width: 800px; margin: 2rem auto; padding: 0 1.5rem;">
+    <!-- Back to Support Home -->
+    <a href="{% url 'support_home' %}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; font-weight: bold; font-family: 'Fredoka', sans-serif; margin-bottom: 1.5rem;">
+        ⬅️ Back to Support Desk
+    </a>
+
+    <!-- Main Ticket Header Card -->
+    <div class="kid-card present" style="border-color: #f59e0b; padding: 2rem; background-color: #ffffff; position: relative;">
+        <!-- Top Status Badges -->
+        <div style="display: flex; gap: 0.5rem; position: absolute; top: 1.5rem; right: 1.5rem;">
+            <span class="kid-badge" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background-color: #fef3c7; color: #d97706; border: 2px solid #f59e0b;">
+                Priority: {{ ticket.get_priority_display }}
+            </span>
+            <span class="kid-badge" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold; 
+                  {% if ticket.state == 'new' %} background-color: #dbeafe; color: #2563eb; border: 2px solid #3b82f6;
+                  {% elif ticket.state == 'in_progress' %} background-color: #ffedd5; color: #ea580c; border: 2px solid #f97316;
+                  {% elif ticket.state == 'on_hold' %} background-color: #f5f5f5; color: #737373; border: 2px solid #a3a3a3;
+                  {% elif ticket.state == 'resolved' %} background-color: #dcfce7; color: #16a34a; border: 2px solid #22c55e;
+                  {% else %} background-color: #f1f5f9; color: #475569; border: 2px solid #64748b; {% endif %}">
+                State: {{ ticket.get_state_display }}
+            </span>
+        </div>
+
+        <span style="font-size: 0.85rem; color: #94a3b8; font-weight: bold;">TICKET NUMBER: {{ ticket.number }}</span>
+        <h1 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin: 0.5rem 0 1rem 0; font-size: 1.75rem;">
+            {{ ticket.subject }}
+        </h1>
+
+        <!-- Info Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; background-color: #f8fafc; border-radius: 12px; margin-bottom: 1.5rem; border: 1px dashed #cbd5e1; font-size: 0.9rem;">
+            <div>
+                <p style="margin: 0.25rem 0; color: #64748b;"><b style="color: #475569;">Caller:</b> {{ ticket.caller }}</p>
+                <p style="margin: 0.25rem 0; color: #64748b;"><b style="color: #475569;">Logged:</b> {{ ticket.created_at|date:"M d, Y h:i A" }}</p>
+            </div>
+            <div>
+                <p style="margin: 0.25rem 0; color: #64748b;"><b style="color: #475569;">Assignment Group:</b> {{ ticket.assignment_group.name|default:"Unassigned" }}</p>
+                <p style="margin: 0.25rem 0; color: #64748b;"><b style="color: #475569;">Assigned To:</b> {{ ticket.assigned_to.name|default:"Unassigned" }}</p>
+            </div>
+        </div>
+
+        <!-- Description Box -->
+        <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin-bottom: 0.5rem;">📝 Issue Details:</h3>
+        <div style="background-color: #fdfdfd; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 1rem; font-family: inherit; line-height: 1.5; color: #334155; font-size: 0.95rem; white-space: pre-wrap;">{{ ticket.description }}</div>
+    </div>
+
+    <!-- Activity Stream (Customer Comments Only) -->
+    <div style="margin-top: 2rem;">
+        <h2 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+            💬 Support Activity Stream
+        </h2>
+
+        {% if activities %}
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+            {% for act in activities %}
+            <div class="kid-card" style="padding: 1rem; border-color: #e2e8f0; background-color: #ffffff; border-radius: 12px; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: #64748b;">
+                    <span style="font-weight: bold; color: #3b82f6;">👤 {{ act.author }}</span>
+                    <span>🕒 {{ act.created_at|date:"M d, Y h:i A" }}</span>
+                </div>
+                <div style="line-height: 1.5; color: #334155; font-size: 0.95rem; white-space: pre-wrap;">{{ act.content }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="kid-card" style="padding: 1.5rem; border-color: #cbd5e1; background-color: #f8fafc; text-align: center; color: #64748b; margin-bottom: 2rem;">
+            <p style="margin: 0; font-size: 0.95rem;">No updates on this ticket yet. Standard queue response is 15 minutes.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Reply / Comment Section -->
+    <div class="kid-card present" style="border-color: #10b981; padding: 2rem; background-color: #ffffff;">
+        <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin-top: 0; margin-bottom: 0.5rem;">📬 Send a Reply</h3>
+        <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 1.25rem;">Reply here to send updates or follow-up questions to the engineers. They will be notified in their ServiceNow console.</p>
+        
+        <form method="POST" action="{% url 'support_ticket_view' ticket.number %}" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% csrf_token %}
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-family: 'Quicksand', sans-serif; font-weight: 700; color: #475569; font-size: 0.9rem;">Your Name:</label>
+                <input type="text" name="author" value="{{ ticket.caller }}" required
+                       style="padding: 0.5rem 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                <label style="font-family: 'Quicksand', sans-serif; font-weight: 700; color: #475569; font-size: 0.9rem;">Message:</label>
+                <textarea name="comment" rows="3" placeholder="Add additional comments here..." required
+                          style="padding: 0.5rem 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; resize: vertical;"></textarea>
+            </div>
+            <button type="submit" class="kid-btn-active"
+                    style="background-color: #10b981; color: white; padding: 0.7rem; font-family: 'Fredoka', sans-serif; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; font-weight: bold; margin-top: 0.5rem;">
+                Post Update
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    input:focus, textarea:focus {
+        border-color: #10b981 !important;
+    }
+    .kid-btn-active:hover {
+        transform: scale(1.02);
+    }
+    .kid-btn-active:active {
+        transform: scale(0.98);
+    }
+</style>
+{% endblock %}

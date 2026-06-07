@@ -110,6 +110,70 @@
         </div>
         
     </div>
+
+    <!-- FULL-WIDTH SECTION: TEACHER SUPPORT PERMISSIONS -->
+    <div class="dev-card permissions-card" style="grid-column: 1 / -1; background: #ffffff; border: var(--border-thickness) solid #cbd5e1; border-radius: 32px; padding: 2rem; box-shadow: var(--card-shadow); margin-top: 2rem;">
+        <h2 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin-top: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.6rem;">
+            <span>🛡️</span> Teacher Support Ticket Permissions
+        </h2>
+        <p style="font-weight: 600; color: #64748b; margin-bottom: 2rem;">Toggle ticket-raising permissions for each teacher. Superusers are automatically permitted.</p>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Quicksand', sans-serif; font-size: 1.05rem;">
+                <thead>
+                    <tr style="border-bottom: 3px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 1rem; color: #1e3a8a; font-family: 'Fredoka', sans-serif;">Username</th>
+                        <th style="padding: 1rem; color: #1e3a8a; font-family: 'Fredoka', sans-serif;">Account Type</th>
+                        <th style="padding: 1rem; color: #1e3a8a; font-family: 'Fredoka', sans-serif;">Support Ticket Status</th>
+                        <th style="padding: 1rem; color: #1e3a8a; font-family: 'Fredoka', sans-serif; text-align: center; width: 200px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in teachers_permissions %}
+                        <tr style="border-bottom: 1.5px solid #f1f5f9; transition: background-color 0.2s;">
+                            <td style="padding: 1rem; font-weight: bold; color: #334155;">{{ item.user.username }}</td>
+                            <td style="padding: 1rem; color: #64748b;">
+                                {% if item.is_superuser %}
+                                    <span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem;">Superuser 👑</span>
+                                {% elif item.user.is_staff %}
+                                    <span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem;">Staff Admin 🔑</span>
+                                {% else %}
+                                    <span style="background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem;">Teacher 📝</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if item.can_raise_tickets %}
+                                    <span style="color: #166534; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        🟢 Allowed to Raise Tickets
+                                    </span>
+                                {% else %}
+                                    <span style="color: #991b1b; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        🔴 Blocked / Disallowed
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem; text-align: center;">
+                                {% if item.is_superuser %}
+                                    <span style="color: #94a3b8; font-style: italic; font-size: 0.9rem;">Cannot modify superuser</span>
+                                {% else %}
+                                    <form method="POST" action="{% url 'admin_developer_page' %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="toggle_support_user_id" value="{{ item.user.pk }}">
+                                        <button type="submit" class="bubbly-btn" 
+                                                style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 12px; cursor: pointer; border: none; font-weight: bold;
+                                                       {% if item.can_raise_tickets %} background: #fee2e2; color: #ef4444; box-shadow: 0 3px 0 #b91c1c;
+                                                       {% else %} background: #dcfce7; color: #16a34a; box-shadow: 0 3px 0 #15803d; {% endif %}">
+                                            {% if item.can_raise_tickets %}🚫 Revoke Permission{% else %}✅ Grant Permission{% endif %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <style>

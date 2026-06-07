@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
-from .models import Student, ClassroomOption, AvatarEmoji, AvatarColor, AppLayoutBlock
+from .models import Student, ClassroomOption, AvatarEmoji, AvatarColor, AppLayoutBlock, AssignmentGroup, SupportEngineer, SupportTicket, TicketActivity
 
 class StudentPINCodeTests(TestCase):
     def setUp(self):
@@ -271,5 +271,224 @@ class DeveloperCustomizerTests(TestCase):
         
         # Verify stats banner hidden in DB
         self.assertFalse(AppLayoutBlock.objects.get(block_id='stats_banner').is_visible)
+
+
+class TechSupportTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        # Seed assignment groups
+        self.group_l2 = AssignmentGroup.objects.create(name="L2 Team", description="Tier 2")
+        self.group_l3 = AssignmentGroup.objects.create(name="L3 Team", description="Tier 3")
+        
+        # Seed engineers
+        self.eng_spock = SupportEngineer.objects.create(name="Spock", email="spock@vulcan.com")
+        self.eng_spock.groups.add(self.group_l2)
+        self.eng_data = SupportEngineer.objects.create(name="Data", email="data@enterprise.com")
+        self.eng_data.groups.add(self.group_l3)
+
+        # Seed user and support permission
+        self.user = User.objects.create_user(username='test_teacher', password='password123', email='teacher@school.com')
+        from .models import TeacherSupportPermission
+        TeacherSupportPermission.objects.create(user=self.user, can_raise_tickets=True)
+        self.client.login(username='test_teacher', password='password123')
+
+    def test_client_create_ticket_success(self):
+        url = reverse('support_home')
+        response = self.client.post(url, {
+            'caller': 'Teacher Jenkins',
+            'subject': 'iPad not charging',
+            'description': 'The ipad in the Bumblebees classroom is plugged in but not charging.',
+            'priority': 'moderate'
+        })
+        # Verify it redirects to ticket detail
+        ticket = SupportTicket.objects.filter(caller='Teacher Jenkins').first()
+        self.assertIsNotNone(ticket)
+        self.assertRedirects(response, reverse('support_ticket_view', kwargs={'number': ticket.number}))
+        
+        # Check system comment is created
+        comment = ticket.activities.filter(activity_type='customer_comment').first()
+        self.assertIsNotNone(comment)
+        self.assertIn("created successfully", comment.content)
+
+    def test_ticket_number_generation(self):
+        t1 = SupportTicket.objects.create(
+            caller="Teacher Bob",
+            subject="Test 1",
+            description="Test description 1"
+        )
+        self.assertTrue(t1.number.startswith("TKT"))
+        # Second ticket
+        t2 = SupportTicket.objects.create(
+            caller="Teacher Bob",
+            subject="Test 2",
+            description="Test description 2"
+        )
+        self.assertTrue(t2.number.startswith("TKT"))
+        # Ensure sequential numbers
+        n1 = int(t1.number[3:])
+        n2 = int(t2.number[3:])
+        self.assertEqual(n2, n1 + 1)
+
+    def test_client_comments_visible_work_notes_hidden(self):
+        ticket = SupportTicket.objects.create(
+            caller="Parent Alice",
+            subject="PIN issue",
+            description="PIN code does not work"
+        )
+        # Create a work note (internal)
+        TicketActivity.objects.create(
+            ticket=ticket,
+            activity_type='work_note',
+            author='Spock',
+            content='This is a secret internal work note about client pin.'
+        )
+        # Create a customer comment (visible)
+        TicketActivity.objects.create(
+            ticket=ticket,
+            activity_type='customer_comment',
+            author='Spock',
+            content='This is a message visible to the customer.'
+        )
+        
+        # Access client view
+        client_url = reverse('support_ticket_view', kwargs={'number': ticket.number})
+        response = self.client.get(client_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This is a message visible to the customer.')
+        self.assertNotContains(response, 'This is a secret internal work note about client pin.')
+
+    def test_engineer_view_displays_both(self):
+        # Authenticate the engineer session
+        session = self.client.session
+        session['engineer_id'] = self.eng_spock.pk
+        session.save()
+
+        ticket = SupportTicket.objects.create(
+            caller="Parent Alice",
+            subject="PIN issue",
+            description="PIN code does not work"
+        )
+        TicketActivity.objects.create(
+            ticket=ticket,
+            activity_type='work_note',
+            author='Spock',
+            content='Internal detail note.'
+        )
+        TicketActivity.objects.create(
+            ticket=ticket,
+            activity_type='customer_comment',
+            author='Spock',
+            content='Visible customer reply.'
+        )
+        
+        # Access engineer detail view
+        eng_url = reverse('engineer_ticket_detail', kwargs={'number': ticket.number})
+        response = self.client.get(eng_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Internal detail note.')
+        self.assertContains(response, 'Visible customer reply.')
+
+    def test_engineer_multiple_groups(self):
+        eng = SupportEngineer.objects.create(name="Kirk", email="kirk@enterprise.com")
+        eng.groups.add(self.group_l2)
+        eng.groups.add(self.group_l3)
+        self.assertEqual(eng.groups.count(), 2)
+        self.assertIn(self.group_l2, eng.groups.all())
+        self.assertIn(self.group_l3, eng.groups.all())
+
+    def test_sla_calculations(self):
+        ticket = SupportTicket.objects.create(
+            caller="Teacher Jenny",
+            subject="Urgent issue",
+            description="The internet connection is completely down.",
+            priority="critical"
+        )
+        sla_info = ticket.get_sla_status()
+        self.assertEqual(sla_info['status'], 'active')
+        self.assertIn('SLA: Active', sla_info['label'])
+        self.assertIn('left', sla_info['label'])
+        
+        # Change to moderate priority
+        ticket.priority = 'moderate'
+        ticket.save()
+        sla_info = ticket.get_sla_status()
+        self.assertIn('left', sla_info['label'])
+        
+        # Resolve ticket
+        ticket.state = 'resolved'
+        ticket.save()
+        sla_info = ticket.get_sla_status()
+        self.assertEqual(sla_info['status'], 'met')
+        self.assertEqual(sla_info['label'], 'SLA: Met')
+
+    def test_identity_manager_loads(self):
+        session = self.client.session
+        session['engineer_id'] = self.eng_spock.pk
+        session.save()
+
+        url = reverse('identity_manager')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Identity & Access Manager')
+        self.assertContains(response, 'test_teacher')
+        self.assertContains(response, 'Spock')
+
+    def test_identity_manager_toggle_teacher(self):
+        session = self.client.session
+        session['engineer_id'] = self.eng_spock.pk
+        session.save()
+
+        from .models import TeacherSupportPermission
+        perm = TeacherSupportPermission.objects.get(user=self.user)
+        self.assertTrue(perm.can_raise_tickets)
+
+        url = reverse('identity_manager')
+        response = self.client.post(url, {
+            'action': 'toggle_teacher_permission',
+            'user_id': self.user.pk
+        })
+        self.assertRedirects(response, reverse('identity_manager'))
+        
+        perm.refresh_from_db()
+        self.assertFalse(perm.can_raise_tickets)
+
+    def test_identity_manager_update_engineer_groups(self):
+        session = self.client.session
+        session['engineer_id'] = self.eng_spock.pk
+        session.save()
+
+        self.assertEqual(self.eng_spock.groups.count(), 1)
+        self.assertIn(self.group_l2, self.eng_spock.groups.all())
+
+        url = reverse('identity_manager')
+        response = self.client.post(url, {
+            'action': 'update_engineer_groups',
+            'engineer_id': self.eng_spock.pk,
+            'groups': [self.group_l2.pk, self.group_l3.pk]
+        })
+        self.assertRedirects(response, reverse('identity_manager'))
+        
+        self.eng_spock.refresh_from_db()
+        self.assertEqual(self.eng_spock.groups.count(), 2)
+        self.assertIn(self.group_l3, self.eng_spock.groups.all())
+
+    def test_identity_manager_toggle_staff(self):
+        session = self.client.session
+        session['engineer_id'] = self.eng_spock.pk
+        session.save()
+
+        self.assertFalse(self.user.is_staff)
+
+        url = reverse('identity_manager')
+        response = self.client.post(url, {
+            'action': 'toggle_staff_status',
+            'user_id': self.user.pk
+        })
+        self.assertRedirects(response, reverse('identity_manager'))
+        
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_staff)
+
+
 
 

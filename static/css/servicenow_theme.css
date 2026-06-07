@@ -1,0 +1,495 @@
+/* ServiceNow Enterprise Support Portal Styling */
+
+:root {
+    --snow-header-bg: #1e2829;
+    --snow-sidebar-bg: #2b3a3b;
+    --snow-sidebar-text: #e1e7e7;
+    --snow-sidebar-hover: #374a4b;
+    --snow-body-bg: #f3f4f6;
+    --snow-card-bg: #ffffff;
+    --snow-border-color: #cbd5e1;
+    --snow-primary-text: #1e293b;
+    --snow-secondary-text: #64748b;
+    
+    /* ServiceNow Work Notes Gold vs Customer Comment Blue */
+    --snow-worknote-bg: #fffbf0;
+    --snow-worknote-border: #f59e0b;
+    --snow-comment-bg: #f0fdf4;
+    --snow-comment-border: #10b981;
+}
+
+body.servicenow-portal {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--snow-body-bg);
+    color: var(--snow-primary-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.snow-header {
+    background-color: var(--snow-header-bg);
+    color: white;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+.snow-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.snow-logo span.badge {
+    background-color: #10b981;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.snow-user-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+}
+
+.snow-user-nav a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.snow-user-nav a:hover {
+    color: white;
+}
+
+/* Main Container Layout */
+.snow-wrapper {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 50px);
+}
+
+/* Sidebar */
+.snow-sidebar {
+    width: 260px;
+    background-color: var(--snow-sidebar-bg);
+    color: var(--snow-sidebar-text);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+.snow-sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.snow-sidebar-section {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8c9fa0;
+    padding: 1.25rem 1rem 0.5rem 1rem;
+    font-weight: 600;
+}
+
+.snow-sidebar-item a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    color: var(--snow-sidebar-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.snow-sidebar-item.active a {
+    background-color: var(--snow-sidebar-hover);
+    color: #ffffff;
+    border-left-color: #10b981;
+    font-weight: 500;
+}
+
+.snow-sidebar-item a:hover {
+    background-color: var(--snow-sidebar-hover);
+    color: white;
+}
+
+/* Main Content Area */
+.snow-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.snow-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--snow-border-color);
+    padding-bottom: 1rem;
+}
+
+.snow-page-header h1 {
+    font-size: 1.75rem;
+    margin: 0;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.snow-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.snow-btn-primary {
+    background-color: #10b981;
+    color: white;
+}
+.snow-btn-primary:hover {
+    background-color: #059669;
+}
+
+.snow-btn-secondary {
+    background-color: #ffffff;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+.snow-btn-secondary:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.snow-btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+.snow-btn-danger:hover {
+    background-color: #dc2626;
+}
+
+/* Simulated identity switcher banner */
+.simulation-banner {
+    background-color: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #92400e;
+}
+
+.simulation-banner form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.simulation-banner select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #d97706;
+    background-color: white;
+}
+
+/* ServiceNow Grid / Table */
+.snow-table-container {
+    background-color: var(--snow-card-bg);
+    border-radius: 6px;
+    border: 1px solid var(--snow-border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.snow-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.snow-table th {
+    background-color: #f8fafc;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid var(--snow-border-color);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.snow-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.snow-table tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Badges for Priority and State */
+.snow-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.badge-low { background-color: #e2e8f0; color: #475569; }
+.badge-moderate { background-color: #dcfce7; color: #15803d; }
+.badge-high { background-color: #ffedd5; color: #c2410c; }
+.badge-critical { background-color: #fee2e2; color: #b91c1c; }
+
+.badge-state-new { background-color: #dbeafe; color: #1e40af; }
+.badge-state-in_progress { background-color: #fef3c7; color: #92400e; }
+.badge-state-on_hold { background-color: #f5f5f5; color: #555555; }
+.badge-state-resolved { background-color: #dcfce7; color: #166534; }
+.badge-state-closed { background-color: #f1f5f9; color: #64748b; }
+
+/* ServiceNow Form Page Layout */
+.snow-form-card {
+    background-color: var(--snow-card-bg);
+    border: 1px solid var(--snow-border-color);
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.snow-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .snow-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.snow-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.snow-form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.snow-form-control {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--snow-border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.snow-form-control:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.snow-form-group-full {
+    grid-column: 1 / -1;
+}
+
+/* Interactive Tabs for Worknotes/Comments */
+.snow-notes-box {
+    margin-top: 2rem;
+    border-top: 1px solid var(--snow-border-color);
+    padding-top: 2rem;
+}
+
+.snow-notes-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--snow-border-color);
+    padding-bottom: 0.5rem;
+}
+
+.snow-tab-btn {
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--snow-secondary-text);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.snow-tab-btn.active-worknote {
+    color: #d97706;
+}
+.snow-tab-btn.active-worknote::after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: #f59e0b;
+}
+
+.snow-tab-btn.active-comment {
+    color: #059669;
+}
+.snow-tab-btn.active-comment::after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: #10b981;
+}
+
+.snow-notes-content {
+    background-color: #fafafa;
+    border: 1px solid var(--snow-border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.worknote-textarea {
+    border-color: var(--snow-worknote-border);
+}
+.worknote-textarea:focus {
+    border-color: #d97706;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+.comment-textarea {
+    border-color: var(--snow-comment-border);
+}
+.comment-textarea:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+/* Activity Stream / History */
+.snow-activity-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    border-left: 4px solid;
+    padding: 1rem;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.875rem;
+}
+
+.activity-item.work-note {
+    background-color: var(--snow-worknote-bg);
+    border-left-color: var(--snow-worknote-border);
+}
+
+.activity-item.customer-comment {
+    background-color: var(--snow-comment-bg);
+    border-left-color: var(--snow-comment-border);
+}
+
+.activity-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.activity-badge {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.activity-item.work-note .activity-badge {
+    color: #b45309;
+}
+
+.activity-item.customer-comment .activity-badge {
+    color: #047857;
+}
+
+.activity-content {
+    white-space: pre-wrap;
+    line-height: 1.4;
+    color: #1e293b;
+}
+
+/* Django Message system inside ServiceNow */
+.snow-alert {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+}
+
+.snow-alert-success {
+    background-color: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+}
+
+.snow-alert-error {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}

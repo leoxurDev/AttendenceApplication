@@ -1,0 +1,60 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Support Engineers | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <h1>Support Engineers</h1>
+    <a href="{% url 'engineer_create' %}" class="snow-btn snow-btn-primary">➕ Add Engineer</a>
+</div>
+
+<div class="snow-table-container">
+    {% if engineers %}
+        <table class="snow-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Assignment Group</th>
+                    <th>Status</th>
+                    <th style="width: 150px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for eng in engineers %}
+                    <tr>
+                        <td style="font-weight: bold;">{{ eng.name }}</td>
+                        <td>{{ eng.email }}</td>
+                        <td>
+                            {% for g in eng.groups.all %}
+                                <span style="font-weight: 500;">{{ g.name }}</span>{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <span style="color: var(--snow-secondary-text); font-style: italic;">None</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if eng.is_active %}
+                                <span class="snow-badge badge-moderate">Active</span>
+                            {% else %}
+                                <span class="snow-badge badge-low">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            <div style="display: inline-flex; gap: 0.5rem;">
+                                <a href="{% url 'engineer_edit' eng.pk %}" class="snow-btn snow-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Edit</a>
+                                <a href="{% url 'engineer_delete' eng.pk %}" class="snow-btn snow-btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: var(--snow-secondary-text);">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">👷</span>
+            <h3>No engineers defined yet.</h3>
+            <p>Seeding will occur automatically when loading the dashboard, or click "Add Engineer" above.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

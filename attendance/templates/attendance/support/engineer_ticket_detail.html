@@ -1,0 +1,238 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Incident {{ ticket.number }} | IT Tech Services{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="{% url 'engineer_dashboard' %}" class="snow-btn snow-btn-secondary">⬅️ Back</a>
+        <h1>Incident Record: {{ ticket.number }}</h1>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <!-- Priority SLA Badge -->
+        {% with sla=ticket.get_sla_status %}
+            <span class="snow-badge {{ sla.class }}" style="font-size: 0.85rem; font-weight: bold; padding: 0.35rem 0.75rem;">
+                {{ sla.label }}
+            </span>
+        {% endwith %}
+        <!-- Shortcut to Client view -->
+        <a href="{% url 'support_ticket_view' ticket.number %}" target="_blank" class="snow-btn snow-btn-secondary">
+            👁️ Open Client View
+        </a>
+    </div>
+</div>
+
+<form method="POST" action="{% url 'engineer_ticket_detail' ticket.number %}" class="snow-form-card">
+    {% csrf_token %}
+
+    <div class="snow-form-grid">
+        <!-- Left Column -->
+        <div class="snow-form-group">
+            <label>Number</label>
+            <input type="text" class="snow-form-control" value="{{ ticket.number }}" readonly style="background-color: #f1f5f9; cursor: not-allowed; font-weight: 500;">
+        </div>
+
+        <!-- Right Column: Assignment Group -->
+        <div class="snow-form-group">
+            <label for="assignment_group">Assignment Group</label>
+            <select name="assignment_group" id="assignment_group" class="snow-form-control" onchange="filterEngineersByGroup(this.value)">
+                <option value="">-- Unassigned --</option>
+                {% for group in groups %}
+                    <option value="{{ group.pk }}" {% if ticket.assignment_group.pk == group.pk %}selected{% endif %}>
+                        {{ group.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Left Column: Caller -->
+        <div class="snow-form-group">
+            <label>Caller</label>
+            <input type="text" class="snow-form-control" value="{{ ticket.caller }}" readonly style="background-color: #f1f5f9; cursor: not-allowed;">
+        </div>
+
+        <!-- Right Column: Assigned To (Pulls from engineers_all to filter by groups in JS) -->
+        <div class="snow-form-group">
+            <label for="assigned_to">Assigned to</label>
+            <select name="assigned_to" id="assigned_to" class="snow-form-control">
+                <option value="">-- Unassigned --</option>
+                {% for eng in engineers_all %}
+                    <option value="{{ eng.pk }}" data-groups="{% for g in eng.groups.all %}{{ g.pk }} {% endfor %}" {% if ticket.assigned_to.pk == eng.pk %}selected{% endif %}>
+                        {{ eng.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Left Column: State -->
+        <div class="snow-form-group">
+            <label for="state">State</label>
+            <select name="state" id="state" class="snow-form-control">
+                <option value="new" {% if ticket.state == 'new' %}selected{% endif %}>New</option>
+                <option value="in_progress" {% if ticket.state == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="on_hold" {% if ticket.state == 'on_hold' %}selected{% endif %}>On Hold</option>
+                <option value="resolved" {% if ticket.state == 'resolved' %}selected{% endif %}>Resolved</option>
+                <option value="closed" {% if ticket.state == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
+        </div>
+
+        <!-- Right Column: Priority -->
+        <div class="snow-form-group">
+            <label for="priority">Priority</label>
+            <select name="priority" id="priority" class="snow-form-control">
+                <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low</option>
+                <option value="moderate" {% if ticket.priority == 'moderate' %}selected{% endif %}>Moderate</option>
+                <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
+                <option value="critical" {% if ticket.priority == 'critical' %}selected{% endif %}>Critical</option>
+            </select>
+        </div>
+
+        <!-- Full Width: Short Description -->
+        <div class="snow-form-group snow-form-group-full">
+            <label>Short Description (Subject)</label>
+            <input type="text" class="snow-form-control" value="{{ ticket.subject }}" readonly style="background-color: #f1f5f9; cursor: not-allowed;">
+        </div>
+
+        <!-- Full Width: Description -->
+        <div class="snow-form-group snow-form-group-full">
+            <label>Description</label>
+            <textarea class="snow-form-control" rows="4" readonly style="background-color: #f1f5f9; cursor: not-allowed; resize: none;">{{ ticket.description }}</textarea>
+        </div>
+    </div>
+
+    <!-- Update Notes & Comments Area -->
+    <div class="snow-notes-box">
+        <div class="snow-notes-tabs">
+            <button type="button" class="snow-tab-btn active-worknote" id="tab-worknote" onclick="switchNoteTab('worknote')">🔒 Work notes (Private)</button>
+            <button type="button" class="snow-tab-btn" id="tab-comment" onclick="switchNoteTab('comment')">👁️ Additional comments (Customer visible)</button>
+        </div>
+
+        <!-- Textarea container for Work Note -->
+        <div class="snow-notes-content" id="container-worknote" style="border-top: 3px solid #f59e0b;">
+            <label style="font-size: 0.8rem; font-weight: bold; color: #b45309; display: block; margin-bottom: 0.5rem;">INTERNAL NOTES (Not visible to callers)</label>
+            <textarea name="work_note" id="work_note_textarea" class="snow-form-control worknote-textarea" rows="3" placeholder="Enter work notes here..." style="width: 100%; box-sizing: border-box;"></textarea>
+        </div>
+
+        <!-- Textarea container for Customer Comment -->
+        <div class="snow-notes-content" id="container-comment" style="border-top: 3px solid #10b981; display: none;">
+            <label style="font-size: 0.8rem; font-weight: bold; color: #047857; display: block; margin-bottom: 0.5rem;">CUSTOMER COMMENTS (Visible to caller in Kindergarten theme)</label>
+            <textarea name="customer_comment" id="comment_textarea" class="snow-form-control comment-textarea" rows="3" placeholder="Enter comments to visible to the caller..." style="width: 100%; box-sizing: border-box;"></textarea>
+        </div>
+    </div>
+
+    <!-- Form Submit Action -->
+    <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <a href="{% url 'engineer_dashboard' %}" class="snow-btn snow-btn-secondary">Cancel</a>
+        <button type="submit" class="snow-btn snow-btn-primary">Update Record</button>
+    </div>
+</form>
+
+<!-- Incident History Activity Stream -->
+<div class="snow-form-card" style="margin-top: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-top: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        📊 Activity Stream (History log)
+    </h2>
+
+    <div class="snow-activity-stream">
+        {% if activities %}
+            {% for act in activities %}
+                <div class="activity-item {% if act.activity_type == 'work_note' %}work-note{% else %}customer-comment{% endif %}">
+                    <div class="activity-meta">
+                        <span class="activity-badge">
+                            {% if act.activity_type == 'work_note' %}
+                                🔒 Work Note
+                            {% else %}
+                                👁️ Additional Comment
+                            {% endif %}
+                        </span>
+                        <span>
+                            by <b>{{ act.author }}</b> at {{ act.created_at|date:"Y-m-d H:i:s" }}
+                        </span>
+                    </div>
+                    <div class="activity-content">{{ act.content }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 1rem; text-align: center; color: var(--snow-secondary-text); font-size: 0.9rem;">
+                No activity records found on this incident.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Tab Switching for Work Notes vs Customer Comments
+    function switchNoteTab(type) {
+        const tabWorknote = document.getElementById('tab-worknote');
+        const tabComment = document.getElementById('tab-comment');
+        const containerWorknote = document.getElementById('container-worknote');
+        const containerComment = document.getElementById('container-comment');
+
+        if (type === 'worknote') {
+            tabWorknote.classList.add('active-worknote');
+            tabComment.classList.remove('active-comment');
+            containerWorknote.style.display = 'block';
+            containerComment.style.display = 'none';
+            document.getElementById('comment_textarea').value = '';
+        } else {
+            tabWorknote.classList.remove('active-worknote');
+            tabComment.classList.add('active-comment');
+            containerWorknote.style.display = 'none';
+            containerComment.style.display = 'block';
+            document.getElementById('work_note_textarea').value = '';
+        }
+    }
+
+    // Dynamic filtering of assignees in ServiceNow forms (supports ManyToMany)
+    function filterEngineersByGroup(groupId) {
+        const assignedSelect = document.getElementById('assigned_to');
+        const options = assignedSelect.options;
+        
+        // Reset assigned selection
+        assignedSelect.value = "";
+        
+        for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            const optGroupsStr = opt.getAttribute('data-groups');
+            
+            if (opt.value === "") {
+                opt.style.display = 'block';
+            } else if (!groupId) {
+                opt.style.display = 'block';
+            } else if (optGroupsStr) {
+                const groupsList = optGroupsStr.trim().split(/\s+/);
+                if (groupsList.includes(groupId)) {
+                    opt.style.display = 'block';
+                } else {
+                    opt.style.display = 'none';
+                }
+            } else {
+                opt.style.display = 'none';
+            }
+        }
+    }
+
+    // Run filter immediately on page load in case group is pre-filled
+    window.addEventListener('DOMContentLoaded', () => {
+        const groupVal = document.getElementById('assignment_group').value;
+        if (groupVal) {
+            const assignedSelect = document.getElementById('assigned_to');
+            const options = assignedSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                const opt = options[i];
+                const optGroupsStr = opt.getAttribute('data-groups');
+                if (opt.value !== "") {
+                    if (optGroupsStr) {
+                        const groupsList = optGroupsStr.trim().split(/\s+/);
+                        if (!groupsList.includes(groupVal)) {
+                            opt.style.display = 'none';
+                        }
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

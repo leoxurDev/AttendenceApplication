@@ -18,6 +18,11 @@
             <a href="{% url 'admin_developer_page' %}" class="bubbly-btn secondary-btn dev-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-color: #8b5cf6; box-shadow: 0 6px 0 #5b21b6;">
                 🛠️ Developer Area
             </a>
+            {% if can_raise_support %}
+            <a href="{% url 'support_home' %}" class="bubbly-btn secondary-btn support-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981; box-shadow: 0 6px 0 #047857;">
+                🛠️ Tech Support
+            </a>
+            {% endif %}
             <a href="{% url 'student_grid' %}" class="bubbly-btn primary-btn" style="background: var(--primary-gradient)">
                 🏠 Kids Grid Screen
             </a>
@@ -74,6 +79,11 @@
             </div>
         </div>
     </div>
+
+    {% if can_raise_support %}
+    <div style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; width: 100%;">
+        <div style="flex: 3; min-width: 320px;">
+    {% endif %}
 
     <!-- Layout Toggle Pill Tab -->
     <div class="dashboard-view-switcher" style="display: flex; gap: 0.35rem; background: #e2e8f0; padding: 0.35rem; border-radius: 20px; width: fit-content; margin-bottom: 2rem; border: 2px solid #cbd5e1; position: relative;">
@@ -265,5 +275,71 @@
             </tbody>
         </table>
     </div>
+
+    {% if can_raise_support %}
+        </div>
+        
+        <!-- Tech Support Sidebar -->
+        <div style="flex: 1.1; min-width: 300px; display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Tech Support Services Card -->
+            <div class="kid-card present" style="border-color: #3b82f6; padding: 1.5rem; background-color: #ffffff; box-shadow: var(--card-shadow); border-radius: 28px;">
+                <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin-top: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem;">
+                    🛠️ Support Services
+                </h3>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem; font-family: 'Quicksand', sans-serif; line-height: 1.4;">
+                    Have a technical issue? Open a ticket to get help from our IT support desk.
+                </p>
+                <a href="{% url 'support_home' %}" class="bubbly-btn primary-btn" style="display: block; text-align: center; text-decoration: none; background: var(--primary-gradient); font-size: 0.95rem; padding: 0.6rem 1.2rem; box-shadow: 0 4px 0 #2563eb;">
+                    🎫 Raise Support Ticket
+                </a>
+            </div>
+
+            <!-- Incidents List/Grid in Sidebar -->
+            <div class="kid-card present" style="border-color: #10b981; padding: 1.5rem; background-color: #ffffff; box-shadow: var(--card-shadow); border-radius: 28px;">
+                <h3 style="font-family: 'Fredoka', sans-serif; color: #1e3a8a; margin-top: 0; font-size: 1.2rem; margin-bottom: 1rem; border-bottom: 2px dashed #cbd5e1; padding-bottom: 0.5rem;">
+                    📋 Support Incidents
+                </h3>
+                {% if tickets_list %}
+                    <div style="display: flex; flex-direction: column; gap: 0.85rem; max-height: 400px; overflow-y: auto; padding-right: 0.25rem;">
+                        {% for ticket in tickets_list %}
+                            <div style="border: 2px solid #e2e8f0; border-radius: 16px; padding: 0.85rem; transition: transform 0.2s, border-color 0.2s; background: #f8fafc;" class="sidebar-ticket-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                    <a href="{% url 'support_ticket_view' ticket.number %}" style="font-family: monospace; font-size: 0.85rem; font-weight: 700; color: #3b82f6; text-decoration: none;">
+                                        {{ ticket.number }}
+                                    </a>
+                                    <span style="font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 12px; border: 1.5px solid 
+                                        {% if ticket.state == 'new' %}#3b82f6; background-color: #dbeafe; color: #2563eb;
+                                        {% elif ticket.state == 'in_progress' %}#f97316; background-color: #ffedd5; color: #ea580c;
+                                        {% elif ticket.state == 'on_hold' %}#a3a3a3; background-color: #f5f5f5; color: #737373;
+                                        {% elif ticket.state == 'resolved' %}#22c55e; background-color: #dcfce7; color: #16a34a;
+                                        {% else %}#64748b; background-color: #f1f5f9; color: #475569;{% endif %}">
+                                        {{ ticket.get_state_display }}
+                                    </span>
+                                </div>
+                                <h4 style="margin: 0 0 0.35rem 0; font-family: 'Fredoka', sans-serif; font-size: 0.95rem; color: #1e3a8a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ ticket.subject }}
+                                </h4>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #94a3b8;">
+                                    <span>Priority: <b style="color: #64748b;">{{ ticket.get_priority_display }}</b></span>
+                                    <span>{{ ticket.created_at|date:"M d" }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; font-weight: 600; margin: 1rem 0;">
+                        No incidents logged yet. 🦋
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <style>
+        .sidebar-ticket-item:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6 !important;
+        }
+    </style>
+    {% endif %}
 </div>
 {% endblock %}

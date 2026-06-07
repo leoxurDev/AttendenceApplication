@@ -1,0 +1,34 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}{{ action }} Group | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="{% url 'group_list' %}" class="snow-btn snow-btn-secondary">⬅️ Back</a>
+        <h1>{{ action }} Assignment Group</h1>
+    </div>
+</div>
+
+<div class="snow-form-card" style="max-width: 600px; margin: 0 auto;">
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div class="snow-form-group">
+                <label for="name">Group Name</label>
+                <input type="text" name="name" id="name" class="snow-form-control" placeholder="e.g. L2 Support Team" value="{{ group.name|default:'' }}" required>
+            </div>
+
+            <div class="snow-form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" class="snow-form-control" rows="4" placeholder="e.g. Handle application layout, general iPad support, and classroom settings." required>{{ group.description|default:'' }}</textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--snow-border-color); padding-top: 1.25rem;">
+                <a href="{% url 'group_list' %}" class="snow-btn snow-btn-secondary">Cancel</a>
+                <button type="submit" class="snow-btn snow-btn-primary">{{ action }} Group</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

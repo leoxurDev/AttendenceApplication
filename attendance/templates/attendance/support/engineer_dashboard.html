@@ -1,0 +1,178 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}Active Incidents | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <h1>Incidents</h1>
+    <a href="{% url 'support_home' %}" class="snow-btn snow-btn-secondary">➕ New Ticket (Client View)</a>
+</div>
+
+<!-- Dashboard Metrics Panel -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Engineer Workloads Card -->
+    <div class="snow-form-card" style="margin-bottom: 0; padding: 1.25rem;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+            📊 Support Engineer Ticket Workloads
+        </h3>
+        <table class="snow-table" style="font-size: 0.8rem; width: 100%;">
+            <thead>
+                <tr>
+                    <th>Engineer Name</th>
+                    <th>Assignment Groups</th>
+                    <th style="text-align: center; width: 100px;">Active Tickets</th>
+                    <th style="text-align: center; width: 100px;">Total Tickets</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for breakdown in engineer_breakdown %}
+                    <tr>
+                        <td style="font-weight: bold; color: #1e293b;">{{ breakdown.name }}</td>
+                        <td>{{ breakdown.groups_str }}</td>
+                        <td style="text-align: center; font-weight: bold; color: {% if breakdown.active_count > 2 %}#ef4444{% else %}#1e293b{% endif %};">
+                            {{ breakdown.active_count }}
+                        </td>
+                        <td style="text-align: center; color: #64748b;">{{ breakdown.total_count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #64748b; padding: 1rem;">No active support engineers found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Quick SLA Counters Card -->
+    <div class="snow-form-card" style="margin-bottom: 0; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+            ⏱️ Active SLA Statuses
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; flex: 1; justify-content: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: #fee2e2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                <span style="font-weight: bold; color: #991b1b; font-size: 0.85rem;">🚨 Breached SLAs</span>
+                <span style="font-weight: 800; font-size: 1.2rem; color: #991b1b;">{{ sla_breached_count }}</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 4px;">
+                <span style="font-weight: bold; color: #1e40af; font-size: 0.85rem;">⏳ Active SLAs</span>
+                <span style="font-weight: 800; font-size: 1.2rem; color: #1e40af;">{{ active_sla_count }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: #fef3c7; border-left: 4px solid #d97706; border-radius: 4px;">
+                <span style="font-weight: bold; color: #92400e; font-size: 0.85rem;">📥 Unassigned Tickets</span>
+                <span style="font-weight: 800; font-size: 1.2rem; color: #92400e;">{{ unassigned_count }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Filter Panel -->
+<div class="snow-form-card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+    <form method="GET" action="{% url 'engineer_dashboard' %}" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div class="snow-form-group" style="min-width: 150px;">
+            <label for="state">State</label>
+            <select name="state" id="state" class="snow-form-control">
+                <option value="">-- All States --</option>
+                <option value="new" {% if selected_state == 'new' %}selected{% endif %}>New</option>
+                <option value="in_progress" {% if selected_state == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="on_hold" {% if selected_state == 'on_hold' %}selected{% endif %}>On Hold</option>
+                <option value="resolved" {% if selected_state == 'resolved' %}selected{% endif %}>Resolved</option>
+                <option value="closed" {% if selected_state == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
+        </div>
+
+        <div class="snow-form-group" style="min-width: 180px;">
+            <label for="group">Assignment Group</label>
+            <select name="group" id="group" class="snow-form-control">
+                <option value="">-- All Groups --</option>
+                {% for group in groups %}
+                    <option value="{{ group.pk }}" {% if selected_group == group.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ group.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="snow-form-group" style="min-width: 150px;">
+            <label for="priority">Priority</label>
+            <select name="priority" id="priority" class="snow-form-control">
+                <option value="">-- All Priorities --</option>
+                <option value="low" {% if selected_priority == 'low' %}selected{% endif %}>Low</option>
+                <option value="moderate" {% if selected_priority == 'moderate' %}selected{% endif %}>Moderate</option>
+                <option value="high" {% if selected_priority == 'high' %}selected{% endif %}>High</option>
+                <option value="critical" {% if selected_priority == 'critical' %}selected{% endif %}>Critical</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="snow-btn snow-btn-primary">Filter</button>
+            <a href="{% url 'engineer_dashboard' %}" class="snow-btn snow-btn-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Tickets Table List -->
+<div class="snow-table-container">
+    {% if tickets %}
+        <table class="snow-table">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Number</th>
+                    <th>Short Description (Subject)</th>
+                    <th style="width: 150px;">Caller</th>
+                    <th style="width: 120px;">State</th>
+                    <th style="width: 100px;">Priority</th>
+                    <th style="width: 160px;">Assignment Group</th>
+                    <th style="width: 150px;">Assigned To</th>
+                    <th style="width: 180px;">SLA Status</th>
+                    <th style="width: 180px;">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'engineer_ticket_detail' ticket.number %}" style="font-weight: bold; color: #0284c7; text-decoration: none;">
+                                {{ ticket.number }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'engineer_ticket_detail' ticket.number %}" style="color: inherit; text-decoration: none; font-weight: 500;">
+                                {{ ticket.subject }}
+                            </a>
+                        </td>
+                        <td>{{ ticket.caller }}</td>
+                        <td>
+                            <span class="snow-badge badge-state-{{ ticket.state }}">
+                                {{ ticket.get_state_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="snow-badge badge-{{ ticket.priority }}">
+                                {{ ticket.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>{{ ticket.assignment_group.name|default:"(empty)" }}</td>
+                        <td>{{ ticket.assigned_to.name|default:"(empty)" }}</td>
+                        <td>
+                            {% with sla=ticket.get_sla_status %}
+                                <span class="snow-badge {{ sla.class }}" style="font-size: 0.7rem; font-weight: 600;">
+                                    {{ sla.label }}
+                                </span>
+                            {% endwith %}
+                        </td>
+                        <td>{{ ticket.created_at|date:"Y-m-d H:i A" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 3rem; text-align: center; color: var(--snow-secondary-text);">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">📭</span>
+            <h3>No incidents match your current filter parameters.</h3>
+            <p>Try resetting the filters or submit a new ticket from the support desk.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'attendance/support/support_base.html' %}
+
+{% block title %}{{ action }} Engineer | ServiceNow Portal{% endblock %}
+
+{% block portal_content %}
+<div class="snow-page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="{% url 'engineer_list' %}" class="snow-btn snow-btn-secondary">⬅️ Back</a>
+        <h1>{{ action }} Support Engineer</h1>
+    </div>
+</div>
+
+<div class="snow-form-card" style="max-width: 600px; margin: 0 auto;">
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div class="snow-form-group">
+                <label for="name">Full Name</label>
+                <input type="text" name="name" id="name" class="snow-form-control" placeholder="e.g. Geordi La Forge" value="{{ engineer.name|default:'' }}" required>
+            </div>
+
+            <div class="snow-form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" class="snow-form-control" placeholder="e.g. geordi@enterprise.com" value="{{ engineer.email|default:'' }}" required>
+            </div>
+
+            <div class="snow-form-group">
+                <label>Assignment Groups</label>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; background: white; border: 1px solid var(--snow-border-color); border-radius: 4px; padding: 0.75rem; max-height: 200px; overflow-y: auto;">
+                    {% for group in groups %}
+                        <label style="font-weight: normal; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" name="groups" value="{{ group.pk }}" 
+                                   {% if group in engineer.groups.all %}checked{% endif %}>
+                            {{ group.name }}
+                        </label>
+                    {% empty %}
+                        <span style="color: var(--snow-secondary-text); font-style: italic; font-size: 0.9rem;">No groups available. Please create groups first.</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="snow-form-group">
+                <label for="is_active">Status</label>
+                <select name="is_active" id="is_active" class="snow-form-control">
+                    <option value="true" {% if engineer.is_active != False %}selected{% endif %}>Active</option>
+                    <option value="false" {% if engineer.is_active == False %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--snow-border-color); padding-top: 1.25rem;">
+                <a href="{% url 'engineer_list' %}" class="snow-btn snow-btn-secondary">Cancel</a>
+                <button type="submit" class="snow-btn snow-btn-primary">{{ action }} Engineer</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

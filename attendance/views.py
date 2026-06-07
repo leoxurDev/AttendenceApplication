@@ -7,9 +7,10 @@ from django.db.models import Count, Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .models import Student, Attendance, ClassroomOption, AppLayoutBlock
+from .models import Student, Attendance, ClassroomOption, AppLayoutBlock, AssignmentGroup, SupportEngineer, SupportTicket, TicketActivity, TeacherSupportPermission
 from .forms import StudentForm
 
 def get_or_seed_layout_blocks():
@@ -321,6 +322,19 @@ def teacher_dashboard(request):
     active_classrooms = ClassroomOption.objects.filter(is_active=True).order_by('order')
     classrooms = [('All', 'All Classes 🏫')] + [(c.name, c.display_value) for c in active_classrooms]
 
+    # Check if this teacher can raise tickets
+    can_raise_support = False
+    tickets_list = []
+    if request.user.is_authenticated:
+        can_raise_support = request.user.is_superuser
+        if not can_raise_support:
+            from .models import TeacherSupportPermission
+            perm, created = TeacherSupportPermission.objects.get_or_create(user=request.user)
+            can_raise_support = perm.can_raise_tickets
+            
+        if can_raise_support:
+            tickets_list = SupportTicket.objects.all().order_by('-created_at')
+
     context = {
         'students': students,
         'today': today,
@@ -333,6 +347,8 @@ def teacher_dashboard(request):
         'selected_classroom': classroom_filter,
         'schedule_status': get_school_schedule_status(),
         'current_time_period': Attendance.get_current_time_period(),
+        'can_raise_support': can_raise_support,
+        'tickets_list': tickets_list,
     }
     return render(request, 'attendance/teacher_dashboard.html', context)
 
@@ -428,8 +444,34 @@ def admin_developer_page(request):
         messages.error(request, "Access denied. Only administrators can use the customizer page. 🔐")
         return redirect('teacher_dashboard')
         
+    # Handle permission toggle POST form
+    if request.method == 'POST' and 'toggle_support_user_id' in request.POST:
+        user_id = request.POST.get('toggle_support_user_id')
+        user_to_toggle = get_object_or_404(User, pk=user_id)
+        perm, created = TeacherSupportPermission.objects.get_or_create(user=user_to_toggle)
+        perm.can_raise_tickets = not perm.can_raise_tickets
+        perm.save()
+        messages.success(request, f"Updated support ticket permissions for {user_to_toggle.username} to: {perm.can_raise_tickets}")
+        return redirect('admin_developer_page')
+
     layout_blocks = get_or_seed_layout_blocks()
-    return render(request, 'attendance/developer_page.html', {'layout_blocks': layout_blocks})
+    
+    # Get all users to manage permissions
+    all_users = User.objects.all().order_by('username')
+    teachers_permissions = []
+    for user in all_users:
+        perm, created = TeacherSupportPermission.objects.get_or_create(user=user)
+        display_allowed = True if user.is_superuser else perm.can_raise_tickets
+        teachers_permissions.append({
+            'user': user,
+            'can_raise_tickets': display_allowed,
+            'is_superuser': user.is_superuser
+        })
+
+    return render(request, 'attendance/developer_page.html', {
+        'layout_blocks': layout_blocks,
+        'teachers_permissions': teachers_permissions
+    })
 
 
 @login_required(login_url='teacher_login')
@@ -631,7 +673,585 @@ def ai_chat_command(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 def schedule_context_processor(request):
+    engineers_all = []
+    active_engineer = None
+    can_raise_support = False
+    try:
+        # Import dynamically to avoid circular references
+        from .models import SupportEngineer, TeacherSupportPermission
+        engineers_all = list(SupportEngineer.objects.all())
+        active_engineer_id = request.session.get('engineer_id', '')
+        if active_engineer_id:
+            active_engineer = SupportEngineer.objects.filter(pk=active_engineer_id).first()
+
+        if request.user.is_authenticated:
+            if request.user.is_superuser:
+                can_raise_support = True
+            else:
+                perm, created = TeacherSupportPermission.objects.get_or_create(user=request.user)
+                can_raise_support = perm.can_raise_tickets
+    except Exception:
+        pass
+
     return {
         'schedule_status': get_school_schedule_status(),
+        'engineers_all': engineers_all,
+        'active_engineer': active_engineer,
+        'can_raise_support': can_raise_support,
     }
+
+
+def ensure_support_seeded():
+    if not AssignmentGroup.objects.exists():
+        l2 = AssignmentGroup.objects.create(name="L2 Support Team", description="Tier 2 technical issues, app configuration, layout adjustments.")
+        l3 = AssignmentGroup.objects.create(name="L3 Support Team", description="Tier 3 database fixes, data migrations, developer APIs.")
+        l4 = AssignmentGroup.objects.create(name="L4 Support Team", description="Tier 4 system bugs, core server deployment, critical errors.")
+        
+        # Seed engineers
+        spock = SupportEngineer.objects.create(name="Spock L2", email="spock@vulcan.com")
+        spock.groups.add(l2)
+        
+        data_eng = SupportEngineer.objects.create(name="Data L3", email="data@enterprise.com")
+        data_eng.groups.add(l3)
+        
+        worf = SupportEngineer.objects.create(name="Worf L4", email="worf@klingon.com")
+        worf.groups.add(l4)
+        
+        # Create a default ticket
+        t = SupportTicket.objects.create(
+            caller="Teacher Jenny",
+            subject="Classroom emojis not loading correctly",
+            description="The Butterflies classroom layout seems to have lost its custom pink avatar coloring in the grid view. Please restore it.",
+            priority="moderate",
+            state="new",
+            assignment_group=l2
+        )
+        
+        # Seed activity log for it
+        TicketActivity.objects.create(
+            ticket=t,
+            activity_type="work_note",
+            author="System Seeder",
+            content="Ticket automatically routed to L2 Support Team based on category 'layout adjustments'."
+        )
+        TicketActivity.objects.create(
+            ticket=t,
+            activity_type="customer_comment",
+            author="System Seeder",
+            content="Hello Teacher Jenny, we have logged this ticket and assigned it to our L2 support group. An engineer will follow up shortly."
+        )
+
+
+def has_support_permission(user):
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    perm, created = TeacherSupportPermission.objects.get_or_create(user=user)
+    return perm.can_raise_tickets
+
+
+def support_home(request):
+    if not request.user.is_authenticated:
+        return redirect('teacher_login')
+    if not has_support_permission(request.user):
+        messages.error(request, "Access denied. You do not have permission to raise support tickets. 🔐")
+        return redirect('home')
+
+    ensure_support_seeded()
+    
+    # Simple search
+    search_query = request.GET.get('ticket_number', '').strip()
+    if search_query:
+        ticket = SupportTicket.objects.filter(number__iexact=search_query).first()
+        if ticket:
+            return redirect('support_ticket_view', number=ticket.number)
+        else:
+            messages.error(request, f"No ticket found with number '{search_query}'. Please try again.")
+            
+    if request.method == 'POST':
+        caller = request.POST.get('caller', '').strip()
+        subject = request.POST.get('subject', '').strip()
+        description = request.POST.get('description', '').strip()
+        priority = request.POST.get('priority', 'moderate')
+        
+        if not caller or not subject or not description:
+            messages.error(request, "Please fill in all fields.")
+        else:
+            ticket = SupportTicket.objects.create(
+                caller=caller,
+                subject=subject,
+                description=description,
+                priority=priority,
+                state='new'
+            )
+            # Create system comment
+            TicketActivity.objects.create(
+                ticket=ticket,
+                activity_type='customer_comment',
+                author='System Desk',
+                content=f"Ticket '{ticket.number}' has been created successfully. Welcome to our Kindergarten support queue!"
+            )
+            messages.success(request, f"Ticket {ticket.number} has been created successfully!")
+            return redirect('support_ticket_view', number=ticket.number)
+            
+    # Fetch all created support tickets for list/grid view
+    tickets = SupportTicket.objects.all().order_by('-created_at')
+    
+    return render(request, 'attendance/support_home.html', {
+        'tickets': tickets
+    })
+
+
+def support_ticket_view(request, number):
+    if not request.user.is_authenticated:
+        return redirect('teacher_login')
+    if not has_support_permission(request.user):
+        messages.error(request, "Access denied. You do not have permission to access support tickets. 🔐")
+        return redirect('home')
+
+    ensure_support_seeded()
+    ticket = get_object_or_404(SupportTicket, number=number)
+    
+    if request.method == 'POST':
+        author = request.POST.get('author', '').strip()
+        comment = request.POST.get('comment', '').strip()
+        
+        if not author or not comment:
+            messages.error(request, "Please fill in your name and message.")
+        else:
+            TicketActivity.objects.create(
+                ticket=ticket,
+                activity_type='customer_comment',
+                author=author,
+                content=comment
+            )
+            messages.success(request, "Your comment has been added successfully.")
+            return redirect('support_ticket_view', number=ticket.number)
+            
+    # Fetch public comments only
+    activities = ticket.activities.filter(activity_type='customer_comment').order_by('created_at')
+    
+    return render(request, 'attendance/support_ticket_detail.html', {
+        'ticket': ticket,
+        'activities': activities
+    })
+
+
+def engineer_login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if not request.session.get('engineer_id'):
+            return redirect('engineer_login')
+        from .models import SupportEngineer
+        eng = SupportEngineer.objects.filter(pk=request.session['engineer_id'], is_active=True).first()
+        if not eng:
+            if 'engineer_id' in request.session:
+                del request.session['engineer_id']
+            messages.error(request, "Your session is invalid or your engineer account has been deactivated.")
+            return redirect('engineer_login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def engineer_login_view(request):
+    if request.session.get('engineer_id'):
+        return redirect('engineer_dashboard')
+        
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+        
+        if not email or not password:
+            messages.error(request, "Please enter both email and password.")
+        else:
+            from .models import SupportEngineer
+            eng = SupportEngineer.objects.filter(email__iexact=email).first()
+            if eng and eng.password == password:
+                if not eng.is_active:
+                    messages.error(request, "This account has been deactivated.")
+                else:
+                    request.session['engineer_id'] = eng.pk
+                    messages.success(request, f"Successfully logged in as {eng.name}.")
+                    return redirect('engineer_dashboard')
+            else:
+                messages.error(request, "Invalid email or password.")
+                
+    return render(request, 'attendance/support/engineer_login.html')
+
+
+def engineer_logout_view(request):
+    if 'engineer_id' in request.session:
+        del request.session['engineer_id']
+    messages.success(request, "Logged out of IT Tech Services portal.")
+    return redirect('engineer_login')
+
+
+@engineer_login_required
+def engineer_dashboard(request):
+    ensure_support_seeded()
+    
+    # Filter by group or state if requested
+    group_filter = request.GET.get('group', '')
+    state_filter = request.GET.get('state', '')
+    priority_filter = request.GET.get('priority', '')
+    
+    tickets = SupportTicket.objects.all().order_by('-created_at')
+    if group_filter:
+        tickets = tickets.filter(assignment_group_id=group_filter)
+    if state_filter:
+        tickets = tickets.filter(state=state_filter)
+    if priority_filter:
+        tickets = tickets.filter(priority=priority_filter)
+        
+    groups = AssignmentGroup.objects.all()
+    engineers = SupportEngineer.objects.all()
+    
+    # Active engineer identity for simulation
+    active_engineer_id = request.session.get('active_engineer_id', '')
+    active_engineer = None
+    if active_engineer_id:
+        active_engineer = SupportEngineer.objects.filter(pk=active_engineer_id).first()
+        
+    if request.method == 'POST' and 'set_engineer_id' in request.POST:
+        eng_id = request.POST.get('set_engineer_id', '')
+        if eng_id:
+            request.session['active_engineer_id'] = eng_id
+        else:
+            if 'active_engineer_id' in request.session:
+                del request.session['active_engineer_id']
+        return redirect('engineer_dashboard')
+
+    # Compile ticket breakdown per engineer
+    engineer_breakdown = []
+    for eng in SupportEngineer.objects.filter(is_active=True):
+        total_assigned = eng.assigned_tickets.count()
+        active_assigned = eng.assigned_tickets.exclude(state__in=['resolved', 'closed']).count()
+        grp_names = ", ".join([g.name for g in eng.groups.all()])
+        engineer_breakdown.append({
+            'name': eng.name,
+            'email': eng.email,
+            'groups_str': grp_names or "None",
+            'total_count': total_assigned,
+            'active_count': active_assigned,
+        })
+    engineer_breakdown.sort(key=lambda x: x['active_count'], reverse=True)
+
+    # Calculate SLA status counts
+    sla_breached_count = 0
+    active_sla_count = 0
+    unassigned_count = SupportTicket.objects.filter(assigned_to__isnull=True).exclude(state__in=['resolved', 'closed']).count()
+    for t in SupportTicket.objects.exclude(state__in=['resolved', 'closed']):
+        status_info = t.get_sla_status()
+        if status_info['status'] == 'breached':
+            sla_breached_count += 1
+        elif status_info['status'] in ['active', 'warning']:
+            active_sla_count += 1
+
+    return render(request, 'attendance/support/engineer_dashboard.html', {
+        'tickets': tickets,
+        'groups': groups,
+        'engineers': engineers,
+        'active_engineer': active_engineer,
+        'selected_group': group_filter,
+        'selected_state': state_filter,
+        'selected_priority': priority_filter,
+        'engineer_breakdown': engineer_breakdown,
+        'sla_breached_count': sla_breached_count,
+        'active_sla_count': active_sla_count,
+        'unassigned_count': unassigned_count,
+    })
+
+
+@engineer_login_required
+def engineer_ticket_detail(request, number):
+    ensure_support_seeded()
+    ticket = get_object_or_404(SupportTicket, number=number)
+    
+    # Get active simulation engineer
+    active_engineer_id = request.session.get('active_engineer_id', '')
+    active_engineer = None
+    if active_engineer_id:
+        active_engineer = SupportEngineer.objects.filter(pk=active_engineer_id).first()
+        
+    if request.method == 'POST':
+        # Update metadata
+        state = request.POST.get('state', '')
+        priority = request.POST.get('priority', '')
+        group_id = request.POST.get('assignment_group', '')
+        assigned_id = request.POST.get('assigned_to', '')
+        
+        # Determine who is posting
+        author_name = active_engineer.name if active_engineer else "Support System"
+        
+        # Handle fields update
+        if state:
+            ticket.state = state
+        if priority:
+            ticket.priority = priority
+            
+        if group_id:
+            ticket.assignment_group_id = group_id
+        else:
+            ticket.assignment_group = None
+            
+        if assigned_id:
+            ticket.assigned_to_id = assigned_id
+        else:
+            ticket.assigned_to = None
+            
+        ticket.save()
+        
+        # Handle Work Note or Customer Comment
+        work_note_content = request.POST.get('work_note', '').strip()
+        customer_comment_content = request.POST.get('customer_comment', '').strip()
+        
+        if work_note_content:
+            TicketActivity.objects.create(
+                ticket=ticket,
+                activity_type='work_note',
+                author=author_name,
+                content=work_note_content
+            )
+            messages.success(request, "Internal Work Note added successfully.")
+            
+        if customer_comment_content:
+            TicketActivity.objects.create(
+                ticket=ticket,
+                activity_type='customer_comment',
+                author=author_name,
+                content=customer_comment_content
+            )
+            messages.success(request, "Customer Comment added successfully.")
+            
+        messages.success(request, f"Ticket {ticket.number} updated successfully.")
+        return redirect('engineer_ticket_detail', number=ticket.number)
+        
+    groups = AssignmentGroup.objects.all()
+    # If the ticket is assigned to a group, filter engineers of that group
+    engineers = SupportEngineer.objects.all()
+    if ticket.assignment_group:
+        engineers = engineers.filter(groups=ticket.assignment_group)
+        
+    activities = ticket.activities.all().order_by('-created_at')
+    
+    return render(request, 'attendance/support/engineer_ticket_detail.html', {
+        'ticket': ticket,
+        'groups': groups,
+        'engineers': engineers,
+        'activities': activities,
+        'active_engineer': active_engineer,
+    })
+
+
+@engineer_login_required
+def engineer_list(request):
+    ensure_support_seeded()
+    engineers = SupportEngineer.objects.all()
+    return render(request, 'attendance/support/engineer_list.html', {
+        'engineers': engineers
+    })
+
+
+@engineer_login_required
+def engineer_create(request):
+    ensure_support_seeded()
+    groups = AssignmentGroup.objects.all()
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        group_ids = request.POST.getlist('groups')
+        is_active = request.POST.get('is_active', '') == 'true'
+        
+        if not name or not email:
+            messages.error(request, "Please enter name and email.")
+        else:
+            eng = SupportEngineer.objects.create(
+                name=name,
+                email=email,
+                is_active=is_active
+            )
+            if group_ids:
+                eng.groups.set(group_ids)
+            messages.success(request, f"Engineer {name} created successfully.")
+            return redirect('engineer_list')
+            
+    return render(request, 'attendance/support/engineer_form.html', {
+        'groups': groups,
+        'action': 'Create'
+    })
+
+
+@engineer_login_required
+def engineer_edit(request, pk):
+    ensure_support_seeded()
+    engineer = get_object_or_404(SupportEngineer, pk=pk)
+    groups = AssignmentGroup.objects.all()
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        group_ids = request.POST.getlist('groups')
+        is_active = request.POST.get('is_active', '') == 'true'
+        
+        if not name or not email:
+            messages.error(request, "Please enter name and email.")
+        else:
+            engineer.name = name
+            engineer.email = email
+            engineer.is_active = is_active
+            engineer.save()
+            engineer.groups.set(group_ids)
+            messages.success(request, f"Engineer {name} updated successfully.")
+            return redirect('engineer_list')
+            
+    return render(request, 'attendance/support/engineer_form.html', {
+        'engineer': engineer,
+        'groups': groups,
+        'action': 'Edit'
+    })
+
+
+@engineer_login_required
+def engineer_delete(request, pk):
+    ensure_support_seeded()
+    engineer = get_object_or_404(SupportEngineer, pk=pk)
+    name = engineer.name
+    if request.method == 'POST':
+        engineer.delete()
+        messages.success(request, f"Engineer {name} deleted successfully.")
+        return redirect('engineer_list')
+    return render(request, 'attendance/support/engineer_confirm_delete.html', {
+        'engineer': engineer
+    })
+
+
+@engineer_login_required
+def group_list(request):
+    ensure_support_seeded()
+    groups = AssignmentGroup.objects.all()
+    return render(request, 'attendance/support/group_list.html', {
+        'groups': groups
+    })
+
+
+@engineer_login_required
+def group_create(request):
+    ensure_support_seeded()
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if not name:
+            messages.error(request, "Please enter a group name.")
+        else:
+            try:
+                AssignmentGroup.objects.create(name=name, description=description)
+                messages.success(request, f"Group {name} created successfully.")
+                return redirect('group_list')
+            except Exception as e:
+                messages.error(request, f"Error creating group: {e}")
+                
+    return render(request, 'attendance/support/group_form.html', {
+        'action': 'Create'
+    })
+
+
+@engineer_login_required
+def group_edit(request, pk):
+    ensure_support_seeded()
+    group = get_object_or_404(AssignmentGroup, pk=pk)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if not name:
+            messages.error(request, "Please enter a group name.")
+        else:
+            try:
+                group.name = name
+                group.description = description
+                group.save()
+                messages.success(request, f"Group {name} updated successfully.")
+                return redirect('group_list')
+            except Exception as e:
+                messages.error(request, f"Error updating group: {e}")
+                
+    return render(request, 'attendance/support/group_form.html', {
+        'group': group,
+        'action': 'Edit'
+    })
+
+
+@engineer_login_required
+def group_delete(request, pk):
+    ensure_support_seeded()
+    group = get_object_or_404(AssignmentGroup, pk=pk)
+    name = group.name
+    if request.method == 'POST':
+        group.delete()
+        messages.success(request, f"Group {name} deleted successfully.")
+        return redirect('group_list')
+    return render(request, 'attendance/support/group_confirm_delete.html', {
+        'group': group
+    })
+
+
+@engineer_login_required
+def identity_manager(request):
+    ensure_support_seeded()
+    from .models import SupportEngineer, AssignmentGroup, TeacherSupportPermission
+    from django.contrib.auth.models import User
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'toggle_teacher_permission':
+            user_id = request.POST.get('user_id')
+            user_to_toggle = get_object_or_404(User, pk=user_id)
+            perm, created = TeacherSupportPermission.objects.get_or_create(user=user_to_toggle)
+            perm.can_raise_tickets = not perm.can_raise_tickets
+            perm.save()
+            messages.success(request, f"Updated support ticket permissions for {user_to_toggle.username} to: {perm.can_raise_tickets}")
+            return redirect('identity_manager')
+            
+        elif action == 'update_engineer_groups':
+            engineer_id = request.POST.get('engineer_id')
+            engineer = get_object_or_404(SupportEngineer, pk=engineer_id)
+            group_ids = request.POST.getlist('groups')
+            # Convert string IDs to integers
+            group_pks = [int(gid) for gid in group_ids if gid.isdigit()]
+            # Set the engineer's groups
+            engineer.groups.set(AssignmentGroup.objects.filter(pk__in=group_pks))
+            engineer.save()
+            messages.success(request, f"Updated assignment groups for engineer {engineer.name}.")
+            return redirect('identity_manager')
+
+        elif action == 'toggle_staff_status':
+            user_id = request.POST.get('user_id')
+            user_to_toggle = get_object_or_404(User, pk=user_id)
+            user_to_toggle.is_staff = not user_to_toggle.is_staff
+            user_to_toggle.save()
+            messages.success(request, f"Updated admin (is_staff) status for {user_to_toggle.username} to: {user_to_toggle.is_staff}")
+            return redirect('identity_manager')
+
+    # Fetch users, engineers, groups
+    users = User.objects.all().order_by('username')
+    engineers = SupportEngineer.objects.all().order_by('name')
+    groups = AssignmentGroup.objects.all().order_by('name')
+
+    # Build template context helper mapping permissions
+    user_perms = []
+    for u in users:
+        perm, created = TeacherSupportPermission.objects.get_or_create(user=u)
+        user_perms.append({
+            'user': u,
+            'can_raise': perm.can_raise_tickets or u.is_superuser
+        })
+
+    return render(request, 'attendance/support/identity_manager.html', {
+        'user_perms': user_perms,
+        'engineers': engineers,
+        'groups': groups,
+    })
+
+
 

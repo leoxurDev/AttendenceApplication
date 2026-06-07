@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Tech Services Login | Leoxur Inc.</title>
+    <!-- ServiceNow Theme CSS -->
+    <link rel="stylesheet" href="{% static 'css/servicenow_theme.css' %}">
+    <style>
+        body.servicenow-login {
+            background-color: #1a2324;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        .login-header {
+            background-color: #2b3a3b;
+            color: #ffffff;
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 4px solid #d97706;
+        }
+        .login-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .login-header p {
+            margin: 0.5rem 0 0 0;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .login-body {
+            padding: 2.25rem 2rem;
+        }
+        .login-footer {
+            padding: 1.25rem 2rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .login-footer a {
+            color: #0284c7;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="servicenow-login">
+
+    <div class="login-card">
+        <div class="login-header">
+            <h2><span>💻</span> IT Tech Services</h2>
+            <p>Leoxur Inc. Staff Portal</p>
+        </div>
+
+        <div class="login-body">
+            <!-- Django Alert Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="snow-alert {% if message.tags == 'success' %}snow-alert-success{% else %}snow-alert-error{% endif %}" style="margin-bottom: 1.25rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="snow-form-group">
+                        <label for="email" style="font-weight: 600; color: #475569;">Email Address</label>
+                        <input type="email" name="email" id="email" class="snow-form-control" placeholder="name@company.com" required
+                               style="width: 100%; box-sizing: border-box; height: 40px; font-size: 0.95rem;">
+                    </div>
+
+                    <div class="snow-form-group">
+                        <label for="password" style="font-weight: 600; color: #475569;">Password</label>
+                        <input type="password" name="password" id="password" class="snow-form-control" placeholder="••••••••" required
+                               style="width: 100%; box-sizing: border-box; height: 40px; font-size: 0.95rem;">
+                    </div>
+
+                    <button type="submit" class="snow-btn snow-btn-primary" style="width: 100%; height: 42px; font-size: 1rem; font-weight: bold; margin-top: 0.5rem; background-color: #2b3a3b; border-color: #2b3a3b;">
+                        Log In to Portal
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            Not staff? <a href="{% url 'home' %}">Exit to School Home</a>
+        </div>
+    </div>
+
+</body>
+</html>
